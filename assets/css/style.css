@@ -1,0 +1,217 @@
+/* =========================
+   GOOGLE FONT
+========================= */
+
+body{
+    font-family:'Poppins',sans-serif;
+    background:#f8f9fa;
+    color:#333;
+    margin:0;
+    padding:0;
+}
+
+/* =========================
+NAVBAR
+========================= */
+
+.navbar{
+    background:#fff;
+    box-shadow:0 2px 15px rgba(0,0,0,.08);
+}
+
+.navbar-brand{
+    font-size:30px;
+    font-weight:700;
+}
+
+.nav-link{
+    font-size:16px;
+    font-weight:500;
+    margin-left:10px;
+}
+
+.nav-link:hover{
+    color:#0d6efd;
+}
+
+/* =========================
+BUTTONS
+========================= */
+
+.btn-primary{
+    border-radius:30px;
+    padding:10px 25px;
+}
+
+.btn-outline-primary{
+    border-radius:30px;
+    padding:10px 25px;
+}
+
+/* =========================
+HERO SECTION
+========================= */
+
+section{
+    padding:70px 0;
+}
+
+.display-4{
+    font-weight:700;
+}
+
+.lead{
+    color:#666;
+}
+
+img{
+    max-width:100%;
+}
+
+/* =========================
+SEARCH BOX
+========================= */
+
+.card{
+    border:none;
+    border-radius:15px;
+}
+
+.form-control{
+    height:55px;
+    border-radius:10px;
+}
+
+.form-control:focus{
+    box-shadow:none;
+    border-color:#0d6efd;
+}
+
+/* =========================
+CATEGORY
+========================= */
+
+.card i{
+    font-size:50px;
+}
+
+.card h4{
+    font-weight:600;
+}
+
+.card:hover{
+    transform:translateY(-8px);
+    transition:.3s;
+}
+
+/* =========================
+FEATURED INTERNSHIP
+========================= */
+
+.card-body h4{
+    font-weight:600;
+}
+
+.card-body p{
+    color:#666;
+}
+/* =========================
+TOP COMPANIES
+========================= */
+
+.bg-light{
+    background:#f8f9fa!important;
+}
+
+.text-primary{
+    color:#0d6efd!important;
+}
+
+/* =========================
+WHY CHOOSE US
+========================= */
+
+.card{
+    transition:0.3s ease;
+}
+
+.card:hover{
+    box-shadow:0 10px 30px rgba(0,0,0,0.15);
+}
+
+/* =========================
+FOOTER
+========================= */
+
+footer{
+    background:#212529;
+    color:#fff;
+}
+
+footer h4,
+footer h5{
+    font-weight:600;
+}
+
+footer a{
+    color:#fff;
+    text-decoration:none;
+}
+
+footer a:hover{
+    color:#0d6efd;
+}
+
+footer p{
+    color:#ddd;
+}
+
+hr{
+    opacity:.2;
+}
+
+/* =========================
+ICONS
+========================= */
+
+.bi{
+    transition:.3s;
+}
+
+.bi:hover{
+    transform:scale(1.2);
+}
+
+/* =========================
+ANIMATION
+========================= */
+
+.card{
+    animation:fadeIn .8s ease;
+}
+
+@keyframes fadeIn{
+
+from{
+opacity:0;
+transform:translateY(20px);
+}
+
+to{
+opacity:1;
+transform:translateY(0);
+}
+
+}
+
+/* =========================
+RESPONSIVE
+========================= */
+
+@media(max-width:991px){
+
+.navbar-nav{
+text-align:center;
+}
+
+.display-
