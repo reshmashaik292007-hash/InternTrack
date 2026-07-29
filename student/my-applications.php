@@ -1,3 +1,34 @@
+<?php
+session_start();
+include("../config/db.php");
+
+if(!isset($_SESSION['student_id']))
+{
+    header("Location: login.php");
+    exit();
+}
+
+$user_id = $_SESSION['student_id'];
+
+$student = mysqli_query($conn,"SELECT student_id FROM students WHERE user_id='$user_id'");
+$studentData = mysqli_fetch_assoc($student);
+$student_id = $studentData['student_id'];
+
+$sql = "SELECT
+            c.company_name,
+            i.title,
+            i.location_type,
+            a.status,
+            a.applied_at
+        FROM applications a
+        JOIN internships i ON a.internship_id = i.internship_id
+        JOIN companies c ON i.company_id = c.company_id
+        WHERE a.student_id='$student_id'
+        ORDER BY a.applied_at DESC";
+
+$result = mysqli_query($conn,$sql);
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -10,6 +41,7 @@
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="../assets/css/style.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
 </head>
 
 <body>
@@ -83,14 +115,10 @@ My Internship Applications
 <tr>
 
 <th>Company</th>
-
 <th>Role</th>
-
 <th>Location</th>
-
 <th>Status</th>
-
-<th>Date</th>
+<th>Applied Date</th>
 
 </tr>
 
@@ -98,93 +126,69 @@ My Internship Applications
 
 <tbody>
 
+<?php
+if(mysqli_num_rows($result)>0)
+{
+    while($row=mysqli_fetch_assoc($result))
+    {
+        if($row['status']=="applied")
+            $badge="primary";
+        elseif($row['status']=="shortlisted")
+            $badge="success";
+        elseif($row['status']=="accepted")
+            $badge="success";
+        elseif($row['status']=="rejected")
+            $badge="danger";
+        else
+            $badge="warning";
+?>
+
 <tr>
 
-<td>Google</td>
+<td><?php echo $row['company_name']; ?></td>
 
-<td>Frontend Developer</td>
+<td><?php echo $row['title']; ?></td>
 
-<td>Hyderabad</td>
+<td><?php echo $row['location_type']; ?></td>
 
 <td>
 
-<span class="badge bg-success">
+<span class="badge bg-<?php echo $badge; ?>">
 
-Shortlisted
+<?php echo ucfirst($row['status']); ?>
 
 </span>
 
 </td>
 
-<td>20 Jul 2026</td>
-
-</tr>
-
-<tr>
-
-<td>Microsoft</td>
-
-<td>Data Analyst</td>
-
-<td>Bengaluru</td>
-
 <td>
 
-<span class="badge bg-warning text-dark">
-
-Under Review
-
-</span>
+<?php echo date("d M Y",strtotime($row['applied_at'])); ?>
 
 </td>
 
-<td>18 Jul 2026</td>
-
 </tr>
+
+<?php
+    }
+}
+else
+{
+?>
 
 <tr>
 
-<td>Amazon</td>
+<td colspan="5" class="text-center">
 
-<td>Cloud Engineer</td>
-
-<td>Chennai</td>
-
-<td>
-
-<span class="badge bg-primary">
-
-Applied
-
-</span>
+No Applications Yet
 
 </td>
 
-<td>16 Jul 2026</td>
-
 </tr>
 
-<tr>
-
-<td>Infosys</td>
-
-<td>Python Developer</td>
-
-<td>Hyderabad</td>
-
-<td>
-
-<span class="badge bg-danger">
-
-Rejected
-
-</span>
-
-</td>
-
-<td>10 Jul 2026</td>
-
-</tr>
+<?php
+}
+?>
 
 </tbody>
 

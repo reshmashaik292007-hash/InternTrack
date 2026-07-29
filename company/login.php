@@ -7,29 +7,37 @@ if(isset($_POST['login']))
     $email = trim($_POST['email']);
     $password = $_POST['password'];
 
-    $query = mysqli_query($conn,"SELECT * FROM users WHERE email='$email' AND role='company'");
+    $query = mysqli_query($conn,"SELECT * FROM users WHERE email='$email'");
 
-    if(mysqli_num_rows($query) > 0)
+if(mysqli_num_rows($query) > 0)
+{
+    $user = mysqli_fetch_assoc($query);
+
+    echo "Database Email: ".$user['email']."<br>";
+    echo "Database Role: ".$user['role']."<br>";
+
+    if($user['role'] != 'company')
     {
-        $user = mysqli_fetch_assoc($query);
+        die("This account is not a company account.");
+    }
 
-        if(password_verify($password,$user['password']))
-        {
-            $_SESSION['company_id'] = $user['user_id'];
-            $_SESSION['company_email'] = $user['email'];
+    if(password_verify($password,$user['password']))
+    {
+        $_SESSION['company_id'] = $user['user_id'];
+        $_SESSION['company_email'] = $user['email'];
 
-            header("Location: dashboard.php");
-            exit();
-        }
-        else
-        {
-            echo "<script>alert('Incorrect Password');</script>";
-        }
+        header("Location: dashboard.php");
+        exit();
     }
     else
     {
-        echo "<script>alert('Company Account Not Found');</script>";
+        die("Password is incorrect.");
     }
+}
+else
+{
+    die("Email not found in database.");
+}
 }
 ?>
 

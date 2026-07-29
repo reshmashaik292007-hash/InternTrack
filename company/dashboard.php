@@ -1,3 +1,66 @@
+<?php
+session_start();
+include("../config/db.php");
+
+if(!isset($_SESSION['company_id']))
+{
+    header("Location: login.php");
+    exit();
+}
+
+$user_id = $_SESSION['company_id'];
+
+// Get company_id
+$company = mysqli_query($conn,"SELECT company_id, company_name FROM companies WHERE user_id='$user_id'");
+$companyData = mysqli_fetch_assoc($company);
+
+$company_id = $companyData['company_id'];
+$company_name = $companyData['company_name'];
+
+// Total internships
+$totalInternships = mysqli_num_rows(
+    mysqli_query($conn,"SELECT * FROM internships WHERE company_id='$company_id'")
+);
+
+// Total applications
+$totalApplications = mysqli_num_rows(
+    mysqli_query($conn,"
+        SELECT a.application_id
+        FROM applications a
+        JOIN internships i
+        ON a.internship_id=i.internship_id
+        WHERE i.company_id='$company_id'
+    ")
+);
+
+// Shortlisted candidates
+$totalShortlisted = mysqli_num_rows(
+    mysqli_query($conn,"
+        SELECT a.application_id
+        FROM applications a
+        JOIN internships i
+        ON a.internship_id=i.internship_id
+        WHERE i.company_id='$company_id'
+        AND a.status='shortlisted'
+    ")
+);
+
+// Recent internships
+$recent = mysqli_query($conn,"
+SELECT
+i.title,
+i.location_type,
+COUNT(a.application_id) AS applications,
+i.is_active
+FROM internships i
+LEFT JOIN applications a
+ON i.internship_id=a.internship_id
+WHERE i.company_id='$company_id'
+GROUP BY i.internship_id
+ORDER BY i.created_at DESC
+LIMIT 5
+");
+?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -71,7 +134,7 @@ data-bs-target="#navbarNav">
 
 <h2 class="fw-bold mb-4">
 
-Welcome, Company 👋
+Welcome, <?php echo $company_name; ?> 👋
 
 </h2>
 
@@ -83,7 +146,7 @@ Welcome, Company 👋
 
 <i class="bi bi-briefcase-fill display-4 text-primary"></i>
 
-<h3 class="mt-3">15</h3>
+<h3 class="mt-3"><?php echo $totalInternships; ?></h3>
 
 <p class="mb-0">Internships Posted</p>
 
@@ -97,7 +160,7 @@ Welcome, Company 👋
 
 <i class="bi bi-people-fill display-4 text-success"></i>
 
-<h3 class="mt-3">120</h3>
+<h3 class="mt-3"><?php echo $totalApplications; ?></h3>
 
 <p class="mb-0">Applications Received</p>
 
@@ -111,7 +174,7 @@ Welcome, Company 👋
 
 <i class="bi bi-check-circle-fill display-4 text-warning"></i>
 
-<h3 class="mt-3">35</h3>
+<h3 class="mt-3"><?php echo $totalShortlisted; ?></h3>
 
 <p class="mb-0">Candidates Shortlisted</p>
 
@@ -155,85 +218,49 @@ Recent Internship Posts
 
 <tbody>
 
+<?php
+if(mysqli_num_rows($recent)>0)
+{
+    while($row=mysqli_fetch_assoc($recent))
+    {
+?>
 <tr>
 
-<td>Frontend Developer</td>
+<td><?php echo $row['title']; ?></td>
 
-<td>Hyderabad</td>
+<td><?php echo $row['location_type']; ?></td>
 
-<td>42</td>
+<td><?php echo $row['applications']; ?></td>
 
 <td>
-
-<span class="badge bg-success">
-
-Active
-
-</span>
-
+<?php
+if($row['is_active']==1)
+{
+    echo '<span class="badge bg-success">Active</span>';
+}
+else
+{
+    echo '<span class="badge bg-danger">Closed</span>';
+}
+?>
 </td>
 
 </tr>
 
+<?php
+    }
+}
+else
+{
+?>
 <tr>
-
-<td>Python Developer</td>
-
-<td>Bengaluru</td>
-
-<td>31</td>
-
-<td>
-
-<span class="badge bg-success">
-
-Active
-
-</span>
-
+<td colspan="4" class="text-center">
+No internships posted yet.
 </td>
-
 </tr>
-<tr>
-
-<td>UI/UX Designer</td>
-
-<td>Pune</td>
-
-<td>18</td>
-
-<td>
-
-<span class="badge bg-warning text-dark">
-
-Closing Soon
-
-</span>
-
-</td>
-
-</tr>
-
-<tr>
-
-<td>Cloud Engineer</td>
-
-<td>Chennai</td>
-
-<td>27</td>
-
-<td>
-
-<span class="badge bg-success">
-
-Active
-
-</span>
-
-</td>
-
-</tr>
-
+<?php
+}
+?>
 </tbody>
 
 </table>

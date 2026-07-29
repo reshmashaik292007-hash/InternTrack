@@ -1,3 +1,37 @@
+<?php
+session_start();
+include("../config/db.php");
+
+if(!isset($_SESSION['admin_id']))
+{
+    header("Location: login.php");
+    exit();
+}
+
+// Counts
+$totalStudents = mysqli_num_rows(mysqli_query($conn,"SELECT * FROM students"));
+
+$totalCompanies = mysqli_num_rows(mysqli_query($conn,"SELECT * FROM companies"));
+
+$totalInternships = mysqli_num_rows(mysqli_query($conn,"SELECT * FROM internships"));
+
+$totalApplications = mysqli_num_rows(mysqli_query($conn,"SELECT * FROM applications"));
+
+// Recent Applications
+$recent = mysqli_query($conn,"
+SELECT
+s.full_name,
+i.title,
+a.applied_at
+FROM applications a
+JOIN students s
+ON a.student_id=s.student_id
+JOIN internships i
+ON a.internship_id=i.internship_id
+ORDER BY a.applied_at DESC
+LIMIT 5
+");
+?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -79,7 +113,7 @@ Admin Dashboard
 
 <i class="bi bi-people-fill display-4 text-primary"></i>
 
-<h3 class="mt-3">250</h3>
+<h3 class="mt-3"><?php echo $totalStudents; ?></h3>
 
 <p>Total Students</p>
 
@@ -93,7 +127,7 @@ Admin Dashboard
 
 <i class="bi bi-building display-4 text-success"></i>
 
-<h3 class="mt-3">40</h3>
+<h3 class="mt-3"><?php echo $totalCompanies; ?></h3>
 
 <p>Companies</p>
 
@@ -107,7 +141,7 @@ Admin Dashboard
 
 <i class="bi bi-briefcase-fill display-4 text-warning"></i>
 
-<h3 class="mt-3">75</h3>
+<h3 class="mt-3"><?php echo $totalInternships; ?></h3>
 
 <p>Internships</p>
 
@@ -121,7 +155,7 @@ Admin Dashboard
 
 <i class="bi bi-file-earmark-check-fill display-4 text-danger"></i>
 
-<h3 class="mt-3">420</h3>
+<h3 class="mt-3"><?php echo $totalApplications; ?></h3>
 
 <p>Applications</p>
 
@@ -163,46 +197,41 @@ Recent Activity
 
 <tbody>
 
+<?php
+if(mysqli_num_rows($recent)>0)
+{
+    while($row=mysqli_fetch_assoc($recent))
+    {
+?>
 <tr>
 
-<td>Rahul Sharma</td>
+<td><?php echo $row['full_name']; ?></td>
 
-<td>Applied for Frontend Internship</td>
+<td>
+Applied for
+<?php echo $row['title']; ?>
+</td>
 
-<td>Today</td>
+<td>
+<?php echo date("d M Y",strtotime($row['applied_at'])); ?>
+</td>
 
 </tr>
 
+<?php
+    }
+}
+else
+{
+?>
 <tr>
-
-<td>Google</td>
-
-<td>Posted New Internship</td>
-
-<td>Today</td>
-
+<td colspan="3" class="text-center">
+No Recent Activity
+</td>
 </tr>
-
-<tr>
-
-<td>Priya Reddy</td>
-
-<td>Updated Student Profile</td>
-
-<td>Yesterday</td>
-
-</tr>
-
-<tr>
-
-<td>Infosys</td>
-
-<td>Approved Candidate</td>
-
-<td>Yesterday</td>
-
-</tr>
-
+<?php
+}
+?>
 </tbody>
 
 </table>
