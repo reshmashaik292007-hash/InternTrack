@@ -1,3 +1,43 @@
+<?php
+session_start();
+include("../config/db.php");
+
+if(!isset($_SESSION['company_id']))
+{
+    header("Location: login.php");
+    exit();
+}
+
+if(isset($_POST['post']))
+{
+    $user_id = $_SESSION['company_id'];
+
+    $company = mysqli_query($conn,"SELECT company_id FROM companies WHERE user_id='$user_id'");
+    $companyData = mysqli_fetch_assoc($company);
+    $company_id = $companyData['company_id'];
+
+    $title = $_POST['title'];
+    $location = $_POST['location'];
+    $duration = $_POST['duration'];
+    $stipend = $_POST['stipend'];
+    $description = $_POST['description'];
+    $requirements = $_POST['requirements'];
+    $deadline = $_POST['deadline'];
+    $type = $_POST['type'];
+
+    $sql = "INSERT INTO internships(company_id,category_id,title,description,requirements,location_type,duration,stipend,min_stipend_value,deadline,is_active)
+             VALUES('$company_id',1,'$title','$description','$requirements','$type','$duration','$stipend',0,'$deadline',1)";
+    if(mysqli_query($conn,$sql))
+    {
+        echo "<script>alert('Internship Posted Successfully');</script>";
+    }
+    else
+    {
+        echo mysqli_error($conn);
+    }
+}
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -77,44 +117,42 @@ data-bs-target="#navbarNav">
 <div class="card-header bg-primary text-white">
 
 <h3 class="mb-0">
-
 Post New Internship
-
 </h3>
 
 </div>
 
 <div class="card-body">
 
-<form>
+<form method="POST">
 
 <div class="mb-3">
 
 <label class="form-label">
-
 Internship Title
-
 </label>
 
 <input
 type="text"
 class="form-control"
-placeholder="e.g. Frontend Developer">
+name="title"
+placeholder="e.g. Frontend Developer"
+required>
 
 </div>
 
 <div class="mb-3">
 
 <label class="form-label">
-
 Location
-
 </label>
 
 <input
 type="text"
 class="form-control"
-placeholder="Enter Location">
+name="location"
+placeholder="Enter Location"
+required>
 
 </div>
 
@@ -123,30 +161,30 @@ placeholder="Enter Location">
 <div class="col-md-6 mb-3">
 
 <label class="form-label">
-
 Duration
-
 </label>
 
 <input
 type="text"
 class="form-control"
-placeholder="e.g. 6 Months">
+name="duration"
+placeholder="e.g. 6 Months"
+required>
 
 </div>
 
 <div class="col-md-6 mb-3">
 
 <label class="form-label">
-
 Stipend
-
 </label>
 
 <input
 type="text"
 class="form-control"
-placeholder="e.g. ₹25,000 / Month">
+name="stipend"
+placeholder="e.g. ₹25,000 / Month"
+required>
 
 </div>
 
@@ -155,65 +193,60 @@ placeholder="e.g. ₹25,000 / Month">
 <div class="mb-3">
 
 <label class="form-label">
-
 Job Description
-
 </label>
 
 <textarea
 class="form-control"
 rows="5"
-placeholder="Enter internship description"></textarea>
+name="description"
+placeholder="Enter internship description"
+required></textarea>
 
 </div>
 
 <div class="mb-3">
 
 <label class="form-label">
-
 Required Skills
-
 </label>
 
 <textarea
 class="form-control"
 rows="4"
-placeholder="HTML, CSS, JavaScript, PHP"></textarea>
-
+name="requirements"
+placeholder="HTML, CSS, JavaScript, PHP"
+required></textarea>
 </div>
+
 <div class="row">
 
 <div class="col-md-6 mb-3">
 
 <label class="form-label">
-
 Application Deadline
-
 </label>
 
 <input
 type="date"
-class="form-control">
+class="form-control"
+name="deadline"
+required>
 
 </div>
 
 <div class="col-md-6 mb-3">
 
 <label class="form-label">
-
 Internship Type
-
 </label>
 
-<select class="form-select">
-
-<option selected>Select Type</option>
-<option>Work From Office</option>
-<option>Work From Home</option>
-<option>Hybrid</option>
-
+<select class="form-select form-select-lg" name="type" required>
+    <option value="">Select Type</option>
+    <option value="On-site">On-site</option>
+    <option value="Remote">Remote</option>
+    <option value="Hybrid">Hybrid</option>
 </select>
-
 </div>
 
 </div>
@@ -222,6 +255,7 @@ Internship Type
 
 <button
 type="submit"
+name="post"
 class="btn btn-primary btn-lg">
 
 Post Internship
@@ -249,9 +283,7 @@ Post Internship
 <div class="container">
 
 <p class="mb-0">
-
 © 2026 InternLink | All Rights Reserved
-
 </p>
 
 </div>

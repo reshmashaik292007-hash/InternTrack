@@ -1,7 +1,43 @@
+<?php
+session_start();
+include("../config/db.php");
+
+if(isset($_POST['login']))
+{
+    $email = trim($_POST['email']);
+    $password = $_POST['password'];
+
+    $query = mysqli_query($conn,"SELECT * FROM users WHERE email='$email' AND role='company'");
+
+    if(mysqli_num_rows($query) > 0)
+    {
+        $user = mysqli_fetch_assoc($query);
+
+        if(password_verify($password,$user['password']))
+        {
+            $_SESSION['company_id'] = $user['user_id'];
+            $_SESSION['company_email'] = $user['email'];
+
+            header("Location: dashboard.php");
+            exit();
+        }
+        else
+        {
+            echo "<script>alert('Incorrect Password');</script>";
+        }
+    }
+    else
+    {
+        echo "<script>alert('Company Account Not Found');</script>";
+    }
+}
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
@@ -22,9 +58,7 @@
 <div class="container">
 
 <a class="navbar-brand fw-bold text-primary" href="../index.php">
-
 InternLink
-
 </a>
 
 <button class="navbar-toggler"
@@ -81,54 +115,52 @@ data-bs-target="#navbarNav">
 <i class="bi bi-building display-3 text-primary"></i>
 
 <h2 class="fw-bold mt-3">
-
 Company Login
-
 </h2>
 
 <p class="text-muted">
-
 Login to your company account
-
 </p>
 
 </div>
 
-<form>
+<form method="POST">
 
 <div class="mb-3">
 
 <label class="form-label">
-
 Company Email
-
 </label>
 
 <input
 type="email"
 class="form-control"
-placeholder="Enter Company Email">
+name="email"
+placeholder="Enter Company Email"
+required>
 
 </div>
 
 <div class="mb-4">
 
 <label class="form-label">
-
 Password
-
 </label>
 
 <input
 type="password"
 class="form-control"
-placeholder="Enter Password">
+name="password"
+placeholder="Enter Password"
+required>
 
 </div>
+
 <div class="d-grid">
 
 <button
 type="submit"
+name="login"
 class="btn btn-primary btn-lg">
 
 Login

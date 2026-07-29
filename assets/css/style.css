@@ -215,3 +215,8 @@ text-align:center;
 }
 
 .display-
+select,
+option{
+    font-size:18px !important;
+    color:#000 !important;
+}

@@ -1,3 +1,38 @@
+<?php
+session_start();
+include("../config/db.php");
+
+if(isset($_POST['login']))
+{
+    $email = trim($_POST['email']);
+    $password = $_POST['password'];
+
+    $query = mysqli_query($conn,"SELECT * FROM users WHERE email='$email' AND role='admin'");
+
+    if(mysqli_num_rows($query) > 0)
+    {
+        $user = mysqli_fetch_assoc($query);
+
+        if(password_verify($password,$user['password']))
+        {
+            $_SESSION['admin_id'] = $user['user_id'];
+            $_SESSION['admin_email'] = $user['email'];
+
+            header("Location: dashboard.php");
+            exit();
+        }
+        else
+        {
+            echo "<script>alert('Incorrect Password');</script>";
+        }
+    }
+    else
+    {
+        echo "<script>alert('Admin Account Not Found');</script>";
+    }
+}
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -9,9 +44,7 @@
 <title>Admin Login | InternLink</title>
 
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-
 <link rel="stylesheet" href="../assets/css/style.css">
-
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
 </head>
@@ -23,9 +56,7 @@
 <div class="container">
 
 <a class="navbar-brand fw-bold text-primary" href="../index.php">
-
 InternLink
-
 </a>
 
 <button class="navbar-toggler"
@@ -82,48 +113,44 @@ data-bs-target="#navbarNav">
 <i class="bi bi-shield-lock-fill display-3 text-primary"></i>
 
 <h2 class="fw-bold mt-3">
-
 Admin Login
-
 </h2>
 
 <p class="text-muted">
-
 Login to Admin Dashboard
-
 </p>
 
 </div>
 
-<form>
+<form method="POST">
 
 <div class="mb-3">
 
 <label class="form-label">
-
 Admin Email
-
 </label>
 
 <input
 type="email"
 class="form-control"
-placeholder="Enter Admin Email">
+name="email"
+placeholder="Enter Admin Email"
+required>
 
 </div>
 
 <div class="mb-4">
 
 <label class="form-label">
-
 Password
-
 </label>
 
 <input
 type="password"
 class="form-control"
-placeholder="Enter Password">
+name="password"
+placeholder="Enter Password"
+required>
 
 </div>
 
@@ -131,6 +158,7 @@ placeholder="Enter Password">
 
 <button
 type="submit"
+name="login"
 class="btn btn-primary btn-lg">
 
 Login
@@ -168,9 +196,7 @@ Login
 <div class="container">
 
 <p class="mb-0">
-
 © 2026 InternLink | All Rights Reserved
-
 </p>
 
 </div>
@@ -178,9 +204,7 @@ Login
 </footer>
 
 <script src="../assets/js/script.js"></script>
-
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
 </body>
-
 </html>

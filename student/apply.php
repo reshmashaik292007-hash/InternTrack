@@ -1,212 +1,70 @@
+<?php
+session_start();
+include("../config/db.php");
+
+if(!isset($_SESSION['student_id'])){
+    header("Location: login.php");
+    exit();
+}
+
+if(!isset($_GET['id'])){
+    die("Internship ID Missing");
+}
+
+$internship_id = (int)$_GET['id'];
+$user_id = $_SESSION['student_id'];
+
+$res = mysqli_query($conn,"SELECT student_id,full_name,phone,college_name FROM students WHERE user_id='$user_id'");
+$student = mysqli_fetch_assoc($res);
+
+if(!$student){
+    die("Student profile not found.");
+}
+
+if(isset($_POST['apply'])){
+    $check = mysqli_query($conn,"SELECT * FROM applications WHERE internship_id='$internship_id' AND student_id='".$student['student_id']."'");
+    if(mysqli_num_rows($check)>0){
+        echo "<script>alert('You have already applied for this internship');</script>";
+    }else{
+        mysqli_query($conn,"INSERT INTO applications(internship_id,student_id,status) VALUES('$internship_id','".$student['student_id']."','applied')");
+        echo "<script>alert('Application Submitted Successfully');window.location='my-applications.php';</script>";
+    }
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <title>Apply Internship | InternLink</title>
-
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="../assets/css/style.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 </head>
-
 <body>
-
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-
-<div class="container">
-
-<a class="navbar-brand fw-bold" href="../index.php">
-InternLink
-</a>
-
-<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-<span class="navbar-toggler-icon"></span>
-</button>
-
-<div class="collapse navbar-collapse" id="navbarNav">
-
-<ul class="navbar-nav ms-auto">
-
-<li class="nav-item">
-<a class="nav-link" href="dashboard.php">Dashboard</a>
-</li>
-
-<li class="nav-item">
-<a class="nav-link" href="internships.php">Internships</a>
-</li>
-
-<li class="nav-item">
-<a class="nav-link" href="my-applications.php">My Applications</a>
-</li>
-
-<li class="nav-item">
-<a class="nav-link" href="profile.php">Profile</a>
-</li>
-
-<li class="nav-item">
-<a class="nav-link text-warning" href="login.php">Logout</a>
-</li>
-
-</ul>
-
-</div>
-
-</div>
-
-</nav>
-
-<section class="py-5">
-
-<div class="container">
-
-<div class="row justify-content-center">
-
-<div class="col-lg-8">
-
-<div class="card shadow border-0">
-
-<div class="card-header bg-primary text-white">
-
-<h3 class="mb-0">
-Internship Application
-</h3>
-
-</div>
-
+<div class="container py-5">
+<div class="card shadow">
+<div class="card-header bg-primary text-white"><h3>Internship Application</h3></div>
 <div class="card-body">
-
-<form>
-
+<form method="POST">
 <div class="mb-3">
-
-<label class="form-label">
-Full Name
-</label>
-
-<input
-type="text"
-class="form-control"
-placeholder="Enter Your Full Name">
-
+<label>Full Name</label>
+<input type="text" class="form-control" value="<?php echo htmlspecialchars($student['full_name']); ?>" readonly>
 </div>
-
 <div class="mb-3">
-
-<label class="form-label">
-Email Address
-</label>
-
-<input
-type="email"
-class="form-control"
-placeholder="Enter Your Email">
-
+<label>Phone</label>
+<input type="text" class="form-control" value="<?php echo htmlspecialchars($student['phone']); ?>" readonly>
 </div>
-
 <div class="mb-3">
-
-<label class="form-label">
-Mobile Number
-</label>
-
-<input
-type="tel"
-class="form-control"
-placeholder="Enter Mobile Number">
-
+<label>College</label>
+<input type="text" class="form-control" value="<?php echo htmlspecialchars($student['college_name']); ?>" readonly>
 </div>
-
-<div class="mb-3">
-
-<label class="form-label">
-College Name
-</label>
-
-<input
-type="text"
-class="form-control"
-placeholder="Enter College Name">
-
+<div class="d-grid">
+<button type="submit" name="apply" class="btn btn-primary btn-lg">Submit Application</button>
+<a href="internships.php" class="btn btn-secondary mt-2">Cancel</a>
 </div>
-
-<div class="mb-3">
-
-<label class="form-label">
-Upload Resume
-</label>
-
-<input
-type="file"
-class="form-control">
-
-</div>
-
-<div class="mb-3">
-
-<label class="form-label">
-Why should we hire you?
-</label>
-
-<textarea
-class="form-control"
-rows="5"
-placeholder="Write your answer here..."></textarea>
-
-</div>
-
-<div class="d-grid gap-2">
-
-<button
-type="submit"
-class="btn btn-primary btn-lg">
-
-Submit Application
-
-</button>
-
-<a
-href="internships.php"
-class="btn btn-outline-secondary">
-
-Cancel
-
-</a>
-
-</div>
-
 </form>
-
 </div>
-
 </div>
-
 </div>
-
-</div>
-
-</div>
-
-</section>
-
-<footer class="bg-dark text-white text-center py-4">
-
-<div class="container">
-
-<p class="mb-0">
-
-© 2026 InternLink | All Rights Reserved
-
-</p>
-
-</div>
-
-</footer>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-
 </body>
-
 </html>

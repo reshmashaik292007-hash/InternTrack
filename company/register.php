@@ -1,3 +1,66 @@
+<?php
+include("../config/db.php");
+
+if(isset($_POST['register']))
+{
+    $company_name = trim($_POST['company_name']);
+    $email = trim($_POST['email']);
+    $website = trim($_POST['website']);
+    $password = $_POST['password'];
+    $confirm_password = $_POST['confirm_password'];
+
+    if($password != $confirm_password)
+    {
+        echo "<script>alert('Passwords do not match');</script>";
+    }
+    else
+    {
+        $check = mysqli_query($conn,"SELECT * FROM users WHERE email='$email'");
+
+        if(mysqli_num_rows($check) > 0)
+        {
+            echo "<script>alert('Email already exists');</script>";
+        }
+        else
+        {
+            $password = password_hash($password, PASSWORD_DEFAULT);
+
+            $sql1 = "INSERT INTO users(email,password,role,status)
+                     VALUES('$email','$password','company','active')";
+
+            if(mysqli_query($conn,$sql1))
+            {
+                $user_id = mysqli_insert_id($conn);
+
+                $description = "New Company";
+                $location = "India";
+                $logo = "default_logo.png";
+
+                $sql2 = "INSERT INTO companies
+                        (user_id,company_name,website,description,location,logo)
+                        VALUES
+                        ('$user_id','$company_name','$website','$description','$location','$logo')";
+
+                if(mysqli_query($conn,$sql2))
+                {
+                    echo "<script>
+                    alert('Company Registration Successful');
+                    window.location='login.php';
+                    </script>";
+                }
+                else
+                {
+                    echo mysqli_error($conn);
+                }
+            }
+            else
+            {
+                echo mysqli_error($conn);
+            }
+        }
+    }
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -91,156 +154,104 @@ Create your company account
 
 </div>
 
-<form>
+<form method="POST" action="">
 
 <div class="row">
 
 <div class="col-md-6 mb-3">
-
-<label class="form-label">
-
-Company Name
-
-</label>
-
+<label class="form-label">Company Name</label>
 <input
 type="text"
 class="form-control"
-placeholder="Enter Company Name">
-
+name="company_name"
+placeholder="Enter Company Name"
+required>
 </div>
 
 <div class="col-md-6 mb-3">
-
-<label class="form-label">
-
-Company Email
-
-</label>
-
+<label class="form-label">Company Email</label>
 <input
 type="email"
 class="form-control"
-placeholder="Enter Company Email">
-
+name="email"
+placeholder="Enter Company Email"
+required>
 </div>
 
 <div class="col-md-6 mb-3">
-
-<label class="form-label">
-
-Contact Number
-
-</label>
-
+<label class="form-label">Contact Number</label>
 <input
 type="tel"
 class="form-control"
+name="phone"
 placeholder="Enter Contact Number">
-
 </div>
 
 <div class="col-md-6 mb-3">
-
-<label class="form-label">
-
-Website
-
-</label>
-
+<label class="form-label">Website</label>
 <input
 type="url"
 class="form-control"
-placeholder="https://example.com">
-
+name="website"
+placeholder="https://example.com"
+required>
 </div>
 
 <div class="col-md-12 mb-3">
-
-<label class="form-label">
-
-Company Address
-
-</label>
-
+<label class="form-label">Company Address</label>
 <textarea
 class="form-control"
+name="address"
 rows="3"
 placeholder="Enter Company Address"></textarea>
-
 </div>
 
 <div class="col-md-6 mb-3">
-
-<label class="form-label">
-
-Password
-
-</label>
-
+<label class="form-label">Password</label>
 <input
 type="password"
 class="form-control"
-placeholder="Create Password">
-
+name="password"
+placeholder="Create Password"
+required>
 </div>
 
 <div class="col-md-6 mb-3">
-
-<label class="form-label">
-
-Confirm Password
-
-</label>
-
+<label class="form-label">Confirm Password</label>
 <input
 type="password"
 class="form-control"
-placeholder="Confirm Password">
-
+name="confirm_password"
+placeholder="Confirm Password"
+required>
 </div>
+
 <div class="col-12 mt-3">
-
 <div class="d-grid">
-
 <button
 type="submit"
+name="register"
 class="btn btn-primary btn-lg">
-
 Create Company Account
-
 </button>
-
 </div>
-
 </div>
 
 </div>
 
 <div class="text-center mt-4">
-
 <p>
-
 Already have a company account?
-
 <a href="login.php" class="text-decoration-none fw-bold">
-
 Login Here
-
 </a>
-
 </p>
-
 </div>
 
 <div class="text-center">
-
 <a href="../index.php" class="text-decoration-none">
-
 ← Back to Home
-
 </a>
-
 </div>
 
 </form>

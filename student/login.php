@@ -1,3 +1,37 @@
+<?php
+include("../config/db.php");
+session_start();
+
+if(isset($_POST['login']))
+{
+    $email = $_POST['email'];
+    $password = $_POST['password'];
+
+    $query = mysqli_query($conn,"SELECT * FROM users WHERE email='$email' AND role='student'");
+
+    if(mysqli_num_rows($query) > 0)
+    {
+        $user = mysqli_fetch_assoc($query);
+
+        if(password_verify($password, $user['password']))
+        {
+            $_SESSION['user_id'] = $user['user_id'];
+            $_SESSION['role'] = $user['role'];
+
+            header("Location: dashboard.php");
+            exit();
+        }
+        else
+        {
+            echo "<script>alert('Incorrect Password');</script>";
+        }
+    }
+    else
+    {
+        echo "<script>alert('Email not found');</script>";
+    }
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -94,7 +128,7 @@ Login to continue
 
 </div>
 
-<form>
+<form method="POST" action="">
 
 <div class="mb-3">
 
@@ -107,7 +141,9 @@ Email Address
 <input
 type="email"
 class="form-control"
-placeholder="Enter Email">
+name="email"
+placeholder="Enter Email"
+required>
 
 </div>
 
@@ -122,15 +158,17 @@ Password
 <input
 type="password"
 class="form-control"
-placeholder="Enter Password">
+name="password"
+placeholder="Enter Password"
+required>
 
 </div>
 <div class="d-grid">
 
 <button
 type="submit"
+name="login"
 class="btn btn-primary btn-lg">
-
 Login
 
 </button>

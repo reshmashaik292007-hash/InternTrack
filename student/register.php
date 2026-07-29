@@ -1,3 +1,46 @@
+<?php
+include("../config/db.php");
+
+if(isset($_POST['register']))
+{
+    $fullname = $_POST['fullname'];
+    $email = $_POST['email'];
+    $phone = $_POST['phone'];
+    $college = $_POST['college'];
+    $password = $_POST['password'];
+    $confirm_password = $_POST['confirm_password'];
+
+    if($password != $confirm_password)
+    {
+        echo "<script>alert('Passwords do not match');</script>";
+    }
+    else
+    {
+        $password = password_hash($password, PASSWORD_DEFAULT);
+
+        $sql1 = "INSERT INTO users(email,password,role,status)
+                 VALUES('$email','$password','student','active')";
+
+        if(mysqli_query($conn,$sql1))
+        {
+            $user_id = mysqli_insert_id($conn);
+
+            $sql2 = "INSERT INTO students(user_id,full_name,phone,college_name)
+                     VALUES('$user_id','$fullname','$phone','$college')";
+
+            mysqli_query($conn,$sql2);
+
+            echo "<script>
+                    alert('Registration Successful');
+                  </script>";
+        }
+        else
+        {
+            echo "Error : ".mysqli_error($conn);
+        }
+    }
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -93,7 +136,7 @@ Create your InternLink account
 
 </div>
 
-<form>
+<form method="POST" action="">
 
 <div class="row">
 
@@ -104,7 +147,9 @@ Create your InternLink account
 <input
 type="text"
 class="form-control"
-placeholder="Enter Full Name">
+name="fullname"
+placeholder="Enter Full Name"
+required>
 
 </div>
 
@@ -115,7 +160,9 @@ placeholder="Enter Full Name">
 <input
 type="email"
 class="form-control"
-placeholder="Enter Email">
+name="email"
+placeholder="Enter Email"
+required>
 
 </div>
 
@@ -126,8 +173,9 @@ placeholder="Enter Email">
 <input
 type="tel"
 class="form-control"
-placeholder="Enter Mobile Number">
-
+name="phone"
+placeholder="Enter Mobile Number"
+required>
 </div>
 
 <div class="col-md-6 mb-3">
@@ -137,7 +185,9 @@ placeholder="Enter Mobile Number">
 <input
 type="text"
 class="form-control"
-placeholder="Enter College Name">
+name="college"
+placeholder="Enter College Name"
+required>
 
 </div>
 
@@ -148,7 +198,9 @@ placeholder="Enter College Name">
 <input
 type="password"
 class="form-control"
-placeholder="Create Password">
+name="password"
+placeholder="Create Password"
+required>
 
 </div>
 
@@ -159,7 +211,9 @@ placeholder="Create Password">
 <input
 type="password"
 class="form-control"
-placeholder="Confirm Password">
+name="confirm_password"
+placeholder="Confirm Password"
+required>
 
 </div>
 <div class="col-12 mt-3">
@@ -168,8 +222,8 @@ placeholder="Confirm Password">
 
 <button
 type="submit"
+name="register"
 class="btn btn-primary btn-lg">
-
 Create Account
 
 </button>
