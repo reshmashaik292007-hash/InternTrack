@@ -1,0 +1,214 @@
+<?php
+session_start();
+include("../config/db.php");
+
+if(isset($_POST['login']))
+{
+    $email = trim($_POST['email']);
+    $password = $_POST['password'];
+
+    $stmt = mysqli_prepare($conn, "SELECT * FROM users WHERE email=? AND role='admin'");
+    mysqli_stmt_bind_param($stmt, "s", $email);
+    mysqli_stmt_execute($stmt);
+    $query = mysqli_stmt_get_result($stmt);
+
+    if(mysqli_num_rows($query) > 0)
+    {
+        $user = mysqli_fetch_assoc($query);
+
+        if(password_verify($password, $user['password']))
+        {
+            session_regenerate_id(true);
+            $_SESSION['admin_id'] = $user['user_id'];
+            $_SESSION['admin_email'] = $user['email'];
+
+            header("Location: dashboard.php");
+            exit();
+        }
+        else
+        {
+            echo "<script>alert('Incorrect Password');</script>";
+        }
+    }
+    else
+    {
+        echo "<script>alert('Admin Account Not Found');</script>";
+    }
+}
+?>
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Admin Login | InternLink</title>
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="../assets/css/style.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+</head>
+
+<body>
+
+<nav class="navbar navbar-expand-lg bg-white shadow-sm">
+
+<div class="container">
+
+<a class="navbar-brand fw-bold text-primary" href="../index.php">
+InternLink
+</a>
+
+<button class="navbar-toggler"
+type="button"
+data-bs-toggle="collapse"
+data-bs-target="#navbarNav">
+
+<span class="navbar-toggler-icon"></span>
+
+</button>
+
+<div class="collapse navbar-collapse" id="navbarNav">
+
+<ul class="navbar-nav ms-auto">
+
+<li class="nav-item">
+<a class="nav-link" href="../index.php">Home</a>
+</li>
+
+<li class="nav-item">
+<a class="nav-link" href="../about.php">About</a>
+</li>
+
+<li class="nav-item">
+<a class="nav-link" href="../contact.php">Contact</a>
+</li>
+
+<li class="nav-item">
+<a class="nav-link active" href="#">Admin Login</a>
+</li>
+
+</ul>
+
+</div>
+
+</div>
+
+</nav>
+
+<section class="py-5">
+
+<div class="container">
+
+<div class="row justify-content-center">
+
+<div class="col-lg-5">
+
+<div class="card shadow border-0">
+
+<div class="card-body p-5">
+
+<div class="text-center mb-4">
+
+<i class="bi bi-shield-lock-fill display-3 text-primary"></i>
+
+<h2 class="fw-bold mt-3">
+Admin Login
+</h2>
+
+<p class="text-muted">
+Login to Admin Dashboard
+</p>
+
+</div>
+
+<form method="POST">
+
+<div class="mb-3">
+
+<label class="form-label">
+Admin Email
+</label>
+
+<input
+type="email"
+class="form-control"
+name="email"
+placeholder="Enter Admin Email"
+required>
+
+</div>
+
+<div class="mb-4">
+
+<label class="form-label">
+Password
+</label>
+
+<input
+type="password"
+class="form-control"
+name="password"
+placeholder="Enter Password"
+required>
+
+</div>
+
+<div class="d-grid">
+
+<button
+type="submit"
+name="login"
+class="btn btn-primary btn-lg">
+
+Login
+
+</button>
+
+</div>
+
+<div class="text-center mt-4">
+
+<a href="../index.php" class="text-decoration-none">
+
+← Back to Home
+
+</a>
+
+</div>
+
+</form>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</section>
+
+<footer class="bg-dark text-white text-center py-4">
+
+<div class="container">
+
+<p class="mb-0">
+© 2026 InternLink | All Rights Reserved
+</p>
+
+</div>
+
+</footer>
+
+<script src="../assets/js/script.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+</html>
