@@ -1,228 +1,459 @@
+<?php
+session_start();
+include("../config/db.php");
+
+if (!isset($_SESSION['student_id'])) {
+    header("Location: login.php");
+    exit();
+}
+
+$user_id = $_SESSION['student_id'];
+
+$message = "";
+$message_type = "";
+
+/* Get student details */
+$query = mysqli_query($conn, "
+    SELECT 
+        u.email,
+        s.full_name,
+        s.phone,
+        s.college_name,
+        s.resume_path
+    FROM users u
+    JOIN students s ON u.user_id = s.user_id
+    WHERE s.user_id = '$user_id'
+");
+
+$student = mysqli_fetch_assoc($query);
+
+
+/* Resume Upload */
+if (isset($_POST['upload_resume'])) {
+
+    if (isset($_FILES['resume']) && $_FILES['resume']['error'] === 0) {
+
+        $file_name = $_FILES['resume']['name'];
+        $file_tmp = $_FILES['resume']['tmp_name'];
+        $file_size = $_FILES['resume']['size'];
+
+        $extension = strtolower(
+            pathinfo($file_name, PATHINFO_EXTENSION)
+        );
+
+        $allowed = array("pdf", "doc", "docx");
+
+        if (!in_array($extension, $allowed)) {
+
+            $message = "Only PDF, DOC and DOCX files are allowed.";
+            $message_type = "danger";
+
+        } elseif ($file_size > 5 * 1024 * 1024) {
+
+            $message = "File size must be less than 5 MB.";
+            $message_type = "danger";
+
+        } else {
+
+            $new_name = "resume_" . $user_id . "_" . time() . "." . $extension;
+
+            $upload_path = "../uploads/resumes/" . $new_name;
+
+            if (move_uploaded_file($file_tmp, $upload_path)) {
+
+                $safe_name = mysqli_real_escape_string($conn, $new_name);
+
+                mysqli_query($conn, "
+                    UPDATE students
+                    SET resume_path = '$safe_name'
+                    WHERE user_id = '$user_id'
+                ");
+
+                $student['resume_path'] = $new_name;
+
+                $message = "Resume uploaded successfully!";
+                $message_type = "success";
+
+            } else {
+
+                $message = "Failed to upload resume.";
+                $message_type = "danger";
+            }
+        }
+
+    } else {
+
+        $message = "Please select a resume.";
+        $message_type = "danger";
+    }
+}
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>My Applications | InternLink</title>
+    <meta charset="UTF-8">
 
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-<link rel="stylesheet" href="../assets/css/style.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>My Profile | InternLink</title>
+
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+        rel="stylesheet">
+
+    <link
+        rel="stylesheet"
+        href="../assets/css/style.css">
+
+    <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+    <style>
+
+        body {
+            background: #f5f7fb;
+        }
+
+        .profile-card {
+            max-width: 750px;
+            margin: 40px auto;
+            border: none;
+            border-radius: 16px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+        }
+
+        .profile-icon {
+            width: 75px;
+            height: 75px;
+            border-radius: 50%;
+            background: #eaf2ff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px;
+        }
+
+        .profile-icon i {
+            font-size: 38px;
+            color: #0d6efd;
+        }
+
+        .profile-info {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .profile-row {
+            display: flex;
+            padding: 10px 0;
+            border-bottom: 1px solid #e5e5e5;
+        }
+
+        .profile-row:last-child {
+            border-bottom: none;
+        }
+
+        .profile-label {
+            width: 120px;
+            font-weight: 600;
+        }
+
+        .resume-box {
+            background: #f8f9fa;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 18px;
+        }
+
+        .upload-btn {
+            white-space: nowrap;
+        }
+
+    </style>
+
 </head>
 
 <body>
 
+
+<!-- Navbar -->
+
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
 
-<div class="container">
+    <div class="container">
 
-<a class="navbar-brand fw-bold" href="../index.php">
-InternLink
-</a>
+        <a
+            class="navbar-brand fw-bold"
+            href="../index.php">
 
-<button class="navbar-toggler" type="button"
-data-bs-toggle="collapse"
-data-bs-target="#navbarNav">
+            InternLink
 
-<span class="navbar-toggler-icon"></span>
+        </a>
 
-</button>
+        <div class="ms-auto">
 
-<div class="collapse navbar-collapse" id="navbarNav">
+            <a
+                href="dashboard.php"
+                class="text-white me-3 text-decoration-none">
 
-<ul class="navbar-nav ms-auto">
+                Dashboard
 
-<li class="nav-item">
-<a class="nav-link" href="dashboard.php">Dashboard</a>
-</li>
+            </a>
 
-<li class="nav-item">
-<a class="nav-link" href="internships.php">Internships</a>
-</li>
+            <a
+                href="internships.php"
+                class="text-white me-3 text-decoration-none">
 
-<li class="nav-item">
-<a class="nav-link active" href="#">My Applications</a>
-</li>
+                Internships
 
-<li class="nav-item">
-<a class="nav-link" href="profile.php">Profile</a>
-</li>
+            </a>
 
-<li class="nav-item">
-<a class="nav-link text-warning" href="login.php">Logout</a>
-</li>
+            <a
+                href="my-applications.php"
+                class="text-white me-3 text-decoration-none">
 
-</ul>
+                My Applications
 
-</div>
+            </a>
 
-</div>
+            <a
+                href="profile.php"
+                class="text-warning text-decoration-none">
+
+                Profile
+
+            </a>
+
+        </div>
+
+    </div>
 
 </nav>
 
-<section class="py-5">
+
+<!-- Profile -->
 
 <div class="container">
 
-<h2 class="fw-bold mb-4">
+    <div class="card profile-card">
 
-My Internship Applications
+        <div class="card-body p-4 p-md-5">
 
-</h2>
 
-<div class="card shadow border-0">
+            <!-- Profile Header -->
 
-<div class="card-body">
+            <div class="text-center mb-4">
 
-<table class="table table-hover align-middle">
+                <div class="profile-icon">
 
-<thead class="table-primary">
+                    <i class="bi bi-person"></i>
 
-<tr>
+                </div>
 
-<th>Company</th>
+                <h2 class="fw-bold mb-1">
 
-<th>Role</th>
+                    My Profile
 
-<th>Location</th>
+                </h2>
 
-<th>Status</th>
+                <p class="text-muted mb-0">
 
-<th>Date</th>
+                    View and manage your profile information
 
-</tr>
+                </p>
 
-</thead>
+            </div>
 
-<tbody>
 
-<tr>
+            <!-- Student Information -->
 
-<td>Google</td>
+            <div class="profile-info mb-4">
 
-<td>Frontend Developer</td>
+                <div class="profile-row">
 
-<td>Hyderabad</td>
+                    <div class="profile-label">
+                        Name
+                    </div>
 
-<td>
+                    <div>
+                        <?php echo htmlspecialchars($student['full_name']); ?>
+                    </div>
 
-<span class="badge bg-success">
+                </div>
 
-Shortlisted
 
-</span>
+                <div class="profile-row">
 
-</td>
+                    <div class="profile-label">
+                        Email
+                    </div>
 
-<td>20 Jul 2026</td>
+                    <div>
+                        <?php echo htmlspecialchars($student['email']); ?>
+                    </div>
 
-</tr>
+                </div>
 
-<tr>
 
-<td>Microsoft</td>
+                <div class="profile-row">
 
-<td>Data Analyst</td>
+                    <div class="profile-label">
+                        Phone
+                    </div>
 
-<td>Bengaluru</td>
+                    <div>
+                        <?php echo htmlspecialchars($student['phone']); ?>
+                    </div>
 
-<td>
+                </div>
 
-<span class="badge bg-warning text-dark">
 
-Under Review
+                <div class="profile-row">
 
-</span>
+                    <div class="profile-label">
+                        College
+                    </div>
 
-</td>
+                    <div>
+                        <?php echo htmlspecialchars($student['college_name']); ?>
+                    </div>
 
-<td>18 Jul 2026</td>
+                </div>
 
-</tr>
+            </div>
 
-<tr>
 
-<td>Amazon</td>
+            <!-- Resume -->
 
-<td>Cloud Engineer</td>
+            <div class="resume-box">
 
-<td>Chennai</td>
+                <div class="d-flex justify-content-between align-items-center mb-3">
 
-<td>
+                    <div>
 
-<span class="badge bg-primary">
+                        <h5 class="fw-bold mb-1">
 
-Applied
+                            <i class="bi bi-file-earmark-text text-primary me-2"></i>
 
-</span>
+                            Resume
 
-</td>
+                        </h5>
 
-<td>16 Jul 2026</td>
+                        <small class="text-muted">
 
-</tr>
+                            Upload your latest resume
 
-<tr>
+                        </small>
 
-<td>Infosys</td>
+                    </div>
 
-<td>Python Developer</td>
 
-<td>Hyderabad</td>
+                    <?php if (!empty($student['resume_path'])) { ?>
 
-<td>
+                        <a
+                            href="../uploads/resumes/<?php echo htmlspecialchars($student['resume_path']); ?>"
+                            target="_blank"
+                            class="btn btn-outline-primary btn-sm">
 
-<span class="badge bg-danger">
+                            <i class="bi bi-eye me-1"></i>
 
-Rejected
+                            View
 
-</span>
+                        </a>
 
-</td>
+                    <?php } ?>
 
-<td>10 Jul 2026</td>
+                </div>
 
-</tr>
 
-</tbody>
+                <!-- Message -->
 
-</table>
+                <?php if ($message != "") { ?>
 
-<div class="text-center mt-4">
+                    <div class="alert alert-<?php echo $message_type; ?> py-2 mb-3">
 
-<a href="internships.php" class="btn btn-primary">
+                        <?php echo htmlspecialchars($message); ?>
 
-Apply for More Internships
+                    </div>
 
-</a>
+                <?php } ?>
+
+
+                <!-- Upload Form -->
+
+                <form
+                    method="POST"
+                    enctype="multipart/form-data">
+
+                    <div class="row g-2">
+
+                        <div class="col">
+
+                            <input
+                                type="file"
+                                name="resume"
+                                class="form-control"
+                                accept=".pdf,.doc,.docx"
+                                required>
+
+                        </div>
+
+                        <div class="col-auto">
+
+                            <button
+                                type="submit"
+                                name="upload_resume"
+                                class="btn btn-primary upload-btn">
+
+                                <i class="bi bi-upload me-1"></i>
+
+                                Upload Resume
+
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                    <small class="text-muted d-block mt-2">
+
+                        PDF, DOC or DOCX • Maximum 5 MB
+
+                    </small>
+
+                </form>
+
+            </div>
+
+
+        </div>
+
+    </div>
 
 </div>
 
-</div>
 
-</div>
-
-</div>
-
-</section>
+<!-- Footer -->
 
 <footer class="bg-dark text-white text-center py-4">
 
-<div class="container">
+    <div class="container">
 
-<p class="mb-0">
+        <p class="mb-0">
 
-© 2026 InternLink | All Rights Reserved
+            © 2026 InternLink | All Rights Reserved
 
-</p>
+        </p>
 
-</div>
+    </div>
 
 </footer>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
 </body>
 

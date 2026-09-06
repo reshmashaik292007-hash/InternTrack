@@ -1,68 +1,138 @@
+<?php
+session_start();
+include("../config/db.php");
+
+if (!isset($_SESSION['company_id'])) {
+    header("Location: login.php");
+    exit();
+}
+
+$user_id = $_SESSION['company_id'];
+
+/* Get company ID */
+$company_query = mysqli_query($conn, "
+    SELECT company_id
+    FROM companies
+    WHERE user_id = '$user_id'
+");
+
+$company = mysqli_fetch_assoc($company_query);
+$company_id = $company['company_id'];
+
+
+/* Get applicants for this company's internships */
+$applicants_query = mysqli_query($conn, "
+    SELECT
+        s.full_name,
+        u.email,
+        i.title,
+        s.resume_path,
+        a.status,
+        a.applied_at
+    FROM applications a
+    JOIN students s
+        ON a.student_id = s.student_id
+    JOIN users u
+        ON s.user_id = u.user_id
+    JOIN internships i
+        ON a.internship_id = i.internship_id
+    WHERE i.company_id = '$company_id'
+    ORDER BY a.applied_at DESC
+");
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
 
 <meta charset="UTF-8">
+
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <title>Applicants | InternLink</title>
 
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-<link rel="stylesheet" href="../assets/css/style.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<link
+href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+rel="stylesheet">
+
+<link
+rel="stylesheet"
+href="../assets/css/style.css">
+
+<link
+rel="stylesheet"
+href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
 </head>
 
 <body>
 
+
+<!-- Navbar -->
+
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
 
 <div class="container">
 
-<a class="navbar-brand fw-bold" href="../index.php">
+<a
+class="navbar-brand fw-bold"
+href="../index.php">
+
 InternLink
+
 </a>
 
-<button class="navbar-toggler" type="button"
-data-bs-toggle="collapse"
-data-bs-target="#navbarNav">
+<div class="ms-auto">
 
-<span class="navbar-toggler-icon"></span>
+<a
+href="dashboard.php"
+class="nav-link d-inline text-white me-3">
 
-</button>
+Dashboard
 
-<div class="collapse navbar-collapse" id="navbarNav">
+</a>
 
-<ul class="navbar-nav ms-auto">
+<a
+href="post-internship.php"
+class="nav-link d-inline text-white me-3">
 
-<li class="nav-item">
-<a class="nav-link" href="dashboard.php">Dashboard</a>
-</li>
+Post Internship
 
-<li class="nav-item">
-<a class="nav-link" href="post-internship.php">Post Internship</a>
-</li>
+</a>
 
-<li class="nav-item">
-<a class="nav-link active" href="#">Applicants</a>
-</li>
+<a
+href="appllicants.php"
+class="nav-link d-inline text-white me-3">
 
-<li class="nav-item">
-<a class="nav-link" href="profile.php">Profile</a>
-</li>
+Applicants
 
-<li class="nav-item">
-<a class="nav-link text-warning" href="login.php">Logout</a>
-</li>
+</a>
 
-</ul>
+<a
+href="profile.php"
+class="nav-link d-inline text-white me-3">
+
+Profile
+
+</a>
+
+<a
+href="login.php"
+class="nav-link d-inline text-warning">
+
+Logout
+
+</a>
 
 </div>
 
 </div>
 
 </nav>
+
+
+<!-- Applicants -->
 
 <section class="py-5">
 
@@ -73,6 +143,7 @@ data-bs-target="#navbarNav">
 Internship Applicants
 
 </h2>
+
 
 <div class="card shadow border-0">
 
@@ -86,7 +157,10 @@ Applicants List
 
 </div>
 
+
 <div class="card-body">
+
+<div class="table-responsive">
 
 <table class="table table-hover align-middle">
 
@@ -95,135 +169,144 @@ Applicants List
 <tr>
 
 <th>Name</th>
+
 <th>Email</th>
-<th>Role</th>
+
+<th>Internship</th>
+
 <th>Resume</th>
+
 <th>Status</th>
 
 </tr>
 
 </thead>
 
+
 <tbody>
 
+
+<?php
+
+if (mysqli_num_rows($applicants_query) > 0) {
+
+    while ($applicant = mysqli_fetch_assoc($applicants_query)) {
+
+?>
+
 <tr>
-
-<td>Rahul Sharma</td>
-
-<td>rahul@gmail.com</td>
-
-<td>Frontend Developer</td>
 
 <td>
 
-<a href="#" class="btn btn-sm btn-outline-primary">
+<?php
+echo htmlspecialchars($applicant['full_name']);
+?>
+
+</td>
+
+
+<td>
+
+<?php
+echo htmlspecialchars($applicant['email']);
+?>
+
+</td>
+
+
+<td>
+
+<?php
+echo htmlspecialchars($applicant['title']);
+?>
+
+</td>
+
+
+<td>
+
+<?php if (!empty($applicant['resume_path'])) { ?>
+
+<a
+href="../uploads/resumes/<?php echo htmlspecialchars($applicant['resume_path']); ?>"
+target="_blank"
+class="btn btn-sm btn-outline-primary">
+
+<i class="bi bi-file-earmark-text"></i>
 
 View Resume
 
 </a>
 
+<?php } else { ?>
+
+<span class="text-muted">
+
+No Resume
+
+</span>
+
+<?php } ?>
+
 </td>
+
 
 <td>
 
-<span class="badge bg-warning text-dark">
+<?php
 
-Pending
+$status = $applicant['status'];
 
-</span>
+if ($status == 'shortlisted') {
+
+    echo '<span class="badge bg-success">Shortlisted</span>';
+
+} elseif ($status == 'accepted') {
+
+    echo '<span class="badge bg-primary">Accepted</span>';
+
+} elseif ($status == 'rejected') {
+
+    echo '<span class="badge bg-danger">Rejected</span>';
+
+} else {
+
+    echo '<span class="badge bg-warning text-dark">Applied</span>';
+
+}
+
+?>
 
 </td>
 
 </tr>
+
+
+<?php
+
+    }
+
+} else {
+
+?>
 
 <tr>
 
-<td>Priya Reddy</td>
+<td
+colspan="5"
+class="text-center text-muted py-4">
 
-<td>priya@gmail.com</td>
-
-<td>Python Developer</td>
-
-<td>
-
-<a href="#" class="btn btn-sm btn-outline-primary">
-
-View Resume
-
-</a>
-
-</td>
-
-<td>
-
-<span class="badge bg-success">
-
-Shortlisted
-
-</span>
-
-</td>
-
-</tr>
-<tr>
-
-<td>Arjun Kumar</td>
-
-<td>arjun@gmail.com</td>
-
-<td>UI/UX Designer</td>
-
-<td>
-
-<a href="#" class="btn btn-sm btn-outline-primary">
-
-View Resume
-
-</a>
-
-</td>
-
-<td>
-
-<span class="badge bg-primary">
-
-Applied
-
-</span>
+No applicants yet.
 
 </td>
 
 </tr>
 
-<tr>
+<?php
 
-<td>Sneha Patel</td>
+}
 
-<td>sneha@gmail.com</td>
-
-<td>Cloud Engineer</td>
-
-<td>
-
-<a href="#" class="btn btn-sm btn-outline-primary">
-
-View Resume
-
-</a>
-
-</td>
-
-<td>
-
-<span class="badge bg-danger">
-
-Rejected
-
-</span>
-
-</td>
-
-</tr>
+?>
 
 </tbody>
 
@@ -235,7 +318,12 @@ Rejected
 
 </div>
 
+</div>
+
 </section>
+
+
+<!-- Footer -->
 
 <footer class="bg-dark text-white text-center py-4">
 
@@ -251,7 +339,6 @@ Rejected
 
 </footer>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
 </body>
 

@@ -2,91 +2,128 @@
 session_start();
 include("../config/db.php");
 
-if(!isset($_SESSION['student_id']))
-{
+if (!isset($_SESSION['company_id'])) {
     header("Location: login.php");
     exit();
 }
 
-$user_id = $_SESSION['student_id'];
+$user_id = $_SESSION['company_id'];
 
-$student = mysqli_query($conn,"SELECT student_id FROM students WHERE user_id='$user_id'");
-$studentData = mysqli_fetch_assoc($student);
-$student_id = $studentData['student_id'];
+/* Get company ID */
+$company_query = mysqli_query($conn, "
+    SELECT company_id
+    FROM companies
+    WHERE user_id = '$user_id'
+");
 
-$sql = "SELECT
-            c.company_name,
-            i.title,
-            i.location_type,
-            a.status,
-            a.applied_at
-        FROM applications a
-        JOIN internships i ON a.internship_id = i.internship_id
-        JOIN companies c ON i.company_id = c.company_id
-        WHERE a.student_id='$student_id'
-        ORDER BY a.applied_at DESC";
+$company = mysqli_fetch_assoc($company_query);
+$company_id = $company['company_id'];
 
-$result = mysqli_query($conn,$sql);
+
+/* Get applicants for this company's internships */
+$applicants_query = mysqli_query($conn, "
+    SELECT
+        s.full_name,
+        u.email,
+        i.title,
+        s.resume_path,
+        a.status,
+        a.applied_at
+    FROM applications a
+    JOIN students s
+        ON a.student_id = s.student_id
+    JOIN users u
+        ON s.user_id = u.user_id
+    JOIN internships i
+        ON a.internship_id = i.internship_id
+    WHERE i.company_id = '$company_id'
+    ORDER BY a.applied_at DESC
+");
 ?>
 
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
+
 <meta charset="UTF-8">
+
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>My Applications | InternLink</title>
+<title>Applicants | InternLink</title>
 
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-<link rel="stylesheet" href="../assets/css/style.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<link
+href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+rel="stylesheet">
+
+<link
+rel="stylesheet"
+href="../assets/css/style.css">
+
+<link
+rel="stylesheet"
+href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
 </head>
 
 <body>
 
+
+<!-- Navbar -->
+
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
 
 <div class="container">
 
-<a class="navbar-brand fw-bold" href="../index.php">
+<a
+class="navbar-brand fw-bold"
+href="../index.php">
+
 InternLink
+
 </a>
 
-<button class="navbar-toggler" type="button"
-data-bs-toggle="collapse"
-data-bs-target="#navbarNav">
+<div class="ms-auto">
 
-<span class="navbar-toggler-icon"></span>
+<a
+href="dashboard.php"
+class="nav-link d-inline text-white me-3">
 
-</button>
+Dashboard
 
-<div class="collapse navbar-collapse" id="navbarNav">
+</a>
 
-<ul class="navbar-nav ms-auto">
+<a
+href="post-internship.php"
+class="nav-link d-inline text-white me-3">
 
-<li class="nav-item">
-<a class="nav-link" href="dashboard.php">Dashboard</a>
-</li>
+Post Internship
 
-<li class="nav-item">
-<a class="nav-link" href="internships.php">Internships</a>
-</li>
+</a>
 
-<li class="nav-item">
-<a class="nav-link active" href="#">My Applications</a>
-</li>
+<a
+href="appllicants.php"
+class="nav-link d-inline text-white me-3">
 
-<li class="nav-item">
-<a class="nav-link" href="profile.php">Profile</a>
-</li>
+Applicants
 
-<li class="nav-item">
-<a class="nav-link text-warning" href="login.php">Logout</a>
-</li>
+</a>
 
-</ul>
+<a
+href="profile.php"
+class="nav-link d-inline text-white me-3">
+
+Profile
+
+</a>
+
+<a
+href="login.php"
+class="nav-link d-inline text-warning">
+
+Logout
+
+</a>
 
 </div>
 
@@ -94,113 +131,186 @@ data-bs-target="#navbarNav">
 
 </nav>
 
+
+<!-- Applicants -->
+
 <section class="py-5">
 
 <div class="container">
 
 <h2 class="fw-bold mb-4">
 
-My Internship Applications
+Internship Applicants
 
 </h2>
 
+
 <div class="card shadow border-0">
+
+<div class="card-header bg-primary text-white">
+
+<h5 class="mb-0">
+
+Applicants List
+
+</h5>
+
+</div>
+
 
 <div class="card-body">
 
+<div class="table-responsive">
+
 <table class="table table-hover align-middle">
 
-<thead class="table-primary">
+<thead class="table-light">
 
 <tr>
 
-<th>Company</th>
-<th>Role</th>
-<th>Location</th>
+<th>Name</th>
+
+<th>Email</th>
+
+<th>Internship</th>
+
+<th>Resume</th>
+
 <th>Status</th>
-<th>Applied Date</th>
 
 </tr>
 
 </thead>
 
+
 <tbody>
 
+
 <?php
-if(mysqli_num_rows($result)>0)
-{
-    while($row=mysqli_fetch_assoc($result))
-    {
-        if($row['status']=="applied")
-            $badge="primary";
-        elseif($row['status']=="shortlisted")
-            $badge="success";
-        elseif($row['status']=="accepted")
-            $badge="success";
-        elseif($row['status']=="rejected")
-            $badge="danger";
-        else
-            $badge="warning";
+
+if (mysqli_num_rows($applicants_query) > 0) {
+
+    while ($applicant = mysqli_fetch_assoc($applicants_query)) {
+
 ?>
 
 <tr>
 
-<td><?php echo $row['company_name']; ?></td>
+<td>
 
-<td><?php echo $row['title']; ?></td>
+<?php
+echo htmlspecialchars($applicant['full_name']);
+?>
 
-<td><?php echo $row['location_type']; ?></td>
+</td>
+
 
 <td>
 
-<span class="badge bg-<?php echo $badge; ?>">
+<?php
+echo htmlspecialchars($applicant['email']);
+?>
 
-<?php echo ucfirst($row['status']); ?>
+</td>
+
+
+<td>
+
+<?php
+echo htmlspecialchars($applicant['title']);
+?>
+
+</td>
+
+
+<td>
+
+<?php if (!empty($applicant['resume_path'])) { ?>
+
+<a
+href="../uploads/resumes/<?php echo htmlspecialchars($applicant['resume_path']); ?>"
+target="_blank"
+class="btn btn-sm btn-outline-primary">
+
+<i class="bi bi-file-earmark-text"></i>
+
+View Resume
+
+</a>
+
+<?php } else { ?>
+
+<span class="text-muted">
+
+No Resume
 
 </span>
 
+<?php } ?>
+
 </td>
+
 
 <td>
 
-<?php echo date("d M Y",strtotime($row['applied_at'])); ?>
+<?php
+
+$status = $applicant['status'];
+
+if ($status == 'shortlisted') {
+
+    echo '<span class="badge bg-success">Shortlisted</span>';
+
+} elseif ($status == 'accepted') {
+
+    echo '<span class="badge bg-primary">Accepted</span>';
+
+} elseif ($status == 'rejected') {
+
+    echo '<span class="badge bg-danger">Rejected</span>';
+
+} else {
+
+    echo '<span class="badge bg-warning text-dark">Applied</span>';
+
+}
+
+?>
 
 </td>
 
 </tr>
 
+
 <?php
+
     }
-}
-else
-{
+
+} else {
+
 ?>
 
 <tr>
 
-<td colspan="5" class="text-center">
+<td
+colspan="5"
+class="text-center text-muted py-4">
 
-No Applications Yet
+No applicants yet.
 
 </td>
 
 </tr>
 
 <?php
+
 }
+
 ?>
 
 </tbody>
 
 </table>
-
-<div class="text-center mt-4">
-
-<a href="internships.php" class="btn btn-primary">
-
-Apply for More Internships
-
-</a>
 
 </div>
 
@@ -211,6 +321,9 @@ Apply for More Internships
 </div>
 
 </section>
+
+
+<!-- Footer -->
 
 <footer class="bg-dark text-white text-center py-4">
 
@@ -226,7 +339,6 @@ Apply for More Internships
 
 </footer>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
 </body>
 
