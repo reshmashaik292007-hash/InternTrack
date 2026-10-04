@@ -10,56 +10,61 @@ if(!isset($_SESSION['company_id']))
 
 $user_id = $_SESSION['company_id'];
 
-// Get company_id
-$company = mysqli_query($conn,"SELECT company_id, company_name FROM companies WHERE user_id='$user_id'");
-$companyData = mysqli_fetch_assoc($company);
+// FIXED: Get company_id using prepared statement
+$stmt = mysqli_prepare($conn, "SELECT company_id, company_name FROM companies WHERE user_id = ?");
+mysqli_stmt_bind_param($stmt, "i", $user_id);
+mysqli_stmt_execute($stmt);
+$result = mysqli_stmt_get_result($stmt);
+$companyData = mysqli_fetch_assoc($result);
 
 $company_id = $companyData['company_id'];
 $company_name = $companyData['company_name'];
 
-// Total internships
-$totalInternships = mysqli_num_rows(
-    mysqli_query($conn,"SELECT * FROM internships WHERE company_id='$company_id'")
-);
+// FIXED: Total internships using prepared statement
+$stmt = mysqli_prepare($conn, "SELECT * FROM internships WHERE company_id = ?");
+mysqli_stmt_bind_param($stmt, "i", $company_id);
+mysqli_stmt_execute($stmt);
+$totalInternships = mysqli_num_rows(mysqli_stmt_get_result($stmt));
 
-// Total applications
-$totalApplications = mysqli_num_rows(
-    mysqli_query($conn,"
-        SELECT a.application_id
-        FROM applications a
-        JOIN internships i
-        ON a.internship_id=i.internship_id
-        WHERE i.company_id='$company_id'
-    ")
-);
+// FIXED: Total applications using prepared statement
+$stmt = mysqli_prepare($conn, "
+    SELECT a.application_id
+    FROM applications a
+    JOIN internships i ON a.internship_id = i.internship_id
+    WHERE i.company_id = ?
+");
+mysqli_stmt_bind_param($stmt, "i", $company_id);
+mysqli_stmt_execute($stmt);
+$totalApplications = mysqli_num_rows(mysqli_stmt_get_result($stmt));
 
-// Shortlisted candidates
-$totalShortlisted = mysqli_num_rows(
-    mysqli_query($conn,"
-        SELECT a.application_id
-        FROM applications a
-        JOIN internships i
-        ON a.internship_id=i.internship_id
-        WHERE i.company_id='$company_id'
-        AND a.status='shortlisted'
-    ")
-);
+// FIXED: Shortlisted candidates using prepared statement
+$stmt = mysqli_prepare($conn, "
+    SELECT a.application_id
+    FROM applications a
+    JOIN internships i ON a.internship_id = i.internship_id
+    WHERE i.company_id = ? AND a.status = 'shortlisted'
+");
+mysqli_stmt_bind_param($stmt, "i", $company_id);
+mysqli_stmt_execute($stmt);
+$totalShortlisted = mysqli_num_rows(mysqli_stmt_get_result($stmt));
 
-// Recent internships
-$recent = mysqli_query($conn,"
+// FIXED: Recent internships using prepared statement
+$stmt = mysqli_prepare($conn, "
 SELECT
 i.title,
 i.location_type,
 COUNT(a.application_id) AS applications,
 i.is_active
 FROM internships i
-LEFT JOIN applications a
-ON i.internship_id=a.internship_id
-WHERE i.company_id='$company_id'
+LEFT JOIN applications a ON i.internship_id = a.internship_id
+WHERE i.company_id = ?
 GROUP BY i.internship_id
 ORDER BY i.created_at DESC
 LIMIT 5
 ");
+mysqli_stmt_bind_param($stmt, "i", $company_id);
+mysqli_stmt_execute($stmt);
+$recent = mysqli_stmt_get_result($stmt);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -117,7 +122,7 @@ data-bs-target="#navbarNav">
 </li>
 
 <li class="nav-item">
-<a class="nav-link text-warning" href="login.php">Logout</a>
+<a class="nav-link text-warning" href="logout.php">Logout</a>
 </li>
 
 </ul>

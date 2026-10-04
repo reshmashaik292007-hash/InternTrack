@@ -15,12 +15,43 @@
 
 <body>
 
+<?php
+session_start();
+include("../config/db.php");
+
+if(!isset($_SESSION['admin_id']))
+{
+    header("Location: login.php");
+    exit();
+}
+
+// FIXED: Get all internships from database
+$stmt = mysqli_prepare($conn, "
+    SELECT
+        i.internship_id,
+        i.title,
+        c.company_name,
+        i.location_type,
+        i.duration,
+        i.is_active,
+        i.deadline
+    FROM internships i
+    JOIN companies c ON i.company_id = c.company_id
+    ORDER BY i.internship_id DESC
+");
+mysqli_stmt_execute($stmt);
+$internships_result = mysqli_stmt_get_result($stmt);
+$total_internships = mysqli_num_rows($internships_result);
+?>
+
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
 
 <div class="container">
 
 <a class="navbar-brand fw-bold" href="../index.php">
+
 InternLink
+
 </a>
 
 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -47,6 +78,10 @@ InternLink
 
 <li class="nav-item">
 <a class="nav-link active" href="#">Internships</a>
+</li>
+
+<li class="nav-item">
+<a class="nav-link" href="applications.php">Applications</a>
 </li>
 
 <li class="nav-item">
@@ -86,6 +121,7 @@ Manage Internships
 <th>Company</th>
 <th>Location</th>
 <th>Duration</th>
+<th>Deadline</th>
 <th>Status</th>
 
 </tr>
@@ -94,41 +130,55 @@ Manage Internships
 
 <tbody>
 
-<tr>
-<td>301</td>
-<td>PHP Developer Intern</td>
-<td>Tech Solutions</td>
-<td>Hyderabad</td>
-<td>3 Months</td>
-<td><span class="badge bg-success">Open</span></td>
-</tr>
+<?php
+
+if ($total_internships > 0) {
+
+    while ($internship = mysqli_fetch_assoc($internships_result)) {
+?>
 
 <tr>
-<td>302</td>
-<td>Frontend Developer Intern</td>
-<td>Google</td>
-<td>Bangalore</td>
-<td>6 Months</td>
-<td><span class="badge bg-success">Open</span></td>
+<td><?php echo htmlspecialchars($internship['internship_id']); ?></td>
+<td><?php echo htmlspecialchars($internship['title']); ?></td>
+<td><?php echo htmlspecialchars($internship['company_name']); ?></td>
+<td><?php echo htmlspecialchars($internship['location_type']); ?></td>
+<td><?php echo htmlspecialchars($internship['duration']); ?></td>
+<td><?php echo date("d M Y", strtotime($internship['deadline'])); ?></td>
+
+<td>
+
+<?php
+
+$is_active = $internship['is_active'];
+
+if ($is_active == 1) {
+    echo '<span class="badge bg-success">Open</span>';
+} else {
+    echo '<span class="badge bg-danger">Closed</span>';
+}
+
+?>
+
+</td>
+
 </tr>
 
-<tr>
-<td>303</td>
-<td>Python Developer Intern</td>
-<td>Infosys</td>
-<td>Pune</td>
-<td>4 Months</td>
-<td><span class="badge bg-warning text-dark">Closing Soon</span></td>
-</tr>
+<?php
+    }
+
+} else {
+?>
 
 <tr>
-<td>304</td>
-<td>Java Full Stack Intern</td>
-<td>TCS</td>
-<td>Chennai</td>
-<td>6 Months</td>
-<td><span class="badge bg-danger">Closed</span></td>
+<td colspan="7" class="text-center text-muted py-4">
+No internships posted yet
+</td>
 </tr>
+
+<?php
+}
+
+?>
 
 </tbody>
 

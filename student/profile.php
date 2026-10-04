@@ -13,8 +13,9 @@ $message = "";
 $message_type = "";
 
 /* Get student details */
-$query = mysqli_query($conn, "
-    SELECT 
+// FIXED: Use prepared statement for SELECT
+$stmt = mysqli_prepare($conn, "
+    SELECT
         u.email,
         s.full_name,
         s.phone,
@@ -22,10 +23,12 @@ $query = mysqli_query($conn, "
         s.resume_path
     FROM users u
     JOIN students s ON u.user_id = s.user_id
-    WHERE s.user_id = '$user_id'
+    WHERE s.user_id = ?
 ");
-
-$student = mysqli_fetch_assoc($query);
+mysqli_stmt_bind_param($stmt, "i", $user_id);
+mysqli_stmt_execute($stmt);
+$result = mysqli_stmt_get_result($stmt);
+$student = mysqli_fetch_assoc($result);
 
 
 /* Resume Upload */
@@ -61,13 +64,14 @@ if (isset($_POST['upload_resume'])) {
 
             if (move_uploaded_file($file_tmp, $upload_path)) {
 
-                $safe_name = mysqli_real_escape_string($conn, $new_name);
-
-                mysqli_query($conn, "
+                // FIXED: Use prepared statement for UPDATE
+                $stmt = mysqli_prepare($conn, "
                     UPDATE students
-                    SET resume_path = '$safe_name'
-                    WHERE user_id = '$user_id'
+                    SET resume_path = ?
+                    WHERE user_id = ?
                 ");
+                mysqli_stmt_bind_param($stmt, "si", $new_name, $user_id);
+                mysqli_stmt_execute($stmt);
 
                 $student['resume_path'] = $new_name;
 

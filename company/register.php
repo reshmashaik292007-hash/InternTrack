@@ -65,8 +65,8 @@ if(isset($_POST['register']))
             {
                 $user_id = mysqli_insert_id($conn);
 
-                $description = "New Company";
-                $location = "India";
+                $description = !empty($_POST['description']) ? trim($_POST['description']) : "New Company";
+                $location = !empty($_POST['address']) ? trim($_POST['address']) : (!empty($_POST['location']) ? trim($_POST['location']) : "India");
                 $logo = "default_logo.png";
 
                 $stmt2 = mysqli_prepare($conn, "INSERT INTO companies (user_id,company_name,website,description,location,logo) VALUES (?,?,?,?,?,?)");

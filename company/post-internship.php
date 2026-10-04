@@ -12,28 +12,46 @@ if(isset($_POST['post']))
 {
     $user_id = $_SESSION['company_id'];
 
-    $company = mysqli_query($conn,"SELECT company_id FROM companies WHERE user_id='$user_id'");
-    $companyData = mysqli_fetch_assoc($company);
-    $company_id = $companyData['company_id'];
+    // FIXED: Use prepared statement for getting company_id
+    $stmt = mysqli_prepare($conn, "SELECT company_id FROM companies WHERE user_id = ?");
+    mysqli_stmt_bind_param($stmt, "i", $user_id);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $companyData = mysqli_fetch_assoc($result);
 
-    $title = $_POST['title'];
-    $location = $_POST['location'];
-    $duration = $_POST['duration'];
-    $stipend = $_POST['stipend'];
-    $description = $_POST['description'];
-    $requirements = $_POST['requirements'];
-    $deadline = $_POST['deadline'];
-    $type = $_POST['type'];
-
-    $sql = "INSERT INTO internships(company_id,category_id,title,description,requirements,location_type,duration,stipend,min_stipend_value,deadline,is_active)
-             VALUES('$company_id',1,'$title','$description','$requirements','$type','$duration','$stipend',0,'$deadline',1)";
-    if(mysqli_query($conn,$sql))
+    if(!$companyData)
     {
-        echo "<script>alert('Internship Posted Successfully');</script>";
+        echo "<script>alert('Error: Company profile not found for this account.');</script>";
     }
     else
     {
-        echo mysqli_error($conn);
+        $company_id = (int)$companyData['company_id'];
+        $title = trim($_POST['title']);
+        $location = trim($_POST['location']);
+        $duration = trim($_POST['duration']);
+        $stipend = trim($_POST['stipend']);
+        $description = trim($_POST['description']);
+        $requirements = trim($_POST['requirements']);
+        $deadline = $_POST['deadline'];
+        $type = $_POST['type'];
+        $category_id = !empty($_POST['category']) ? (int)$_POST['category'] : 1;
+        $min_stipend_value = (int)preg_replace('/[^0-9]/', '', $stipend);
+
+        // FIXED: Use prepared statement for INSERT
+        $stmt = mysqli_prepare($conn, "
+            INSERT INTO internships(company_id, category_id, title, description, requirements, location_type, duration, stipend, min_stipend_value, deadline, is_active)
+            VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+        ");
+        mysqli_stmt_bind_param($stmt, "iissssssis", $company_id, $category_id, $title, $description, $requirements, $type, $duration, $stipend, $min_stipend_value, $deadline);
+
+        if(mysqli_stmt_execute($stmt))
+        {
+            echo "<script>alert('Internship Posted Successfully');window.location='dashboard.php';</script>";
+        }
+        else
+        {
+            echo "<script>alert('Error: " . mysqli_error($conn) . "');</script>";
+        }
     }
 }
 ?>
@@ -93,7 +111,7 @@ data-bs-target="#navbarNav">
 </li>
 
 <li class="nav-item">
-<a class="nav-link text-warning" href="login.php">Logout</a>
+<a class="nav-link text-warning" href="logout.php">Logout</a>
 </li>
 
 </ul>
@@ -221,26 +239,28 @@ required></textarea>
 
 <div class="row">
 
-<div class="col-md-6 mb-3">
-
-<label class="form-label">
-Application Deadline
-</label>
-
-<input
-type="date"
-class="form-control"
-name="deadline"
-required>
-
+<div class="col-md-4 mb-3">
+<label class="form-label">Category</label>
+<select class="form-select form-select-lg" name="category" required>
+    <option value="">Select Category</option>
+    <?php
+    $cats_res = mysqli_query($conn, "SELECT category_id, category_name FROM categories ORDER BY category_name ASC");
+    if($cats_res) {
+        while($cat = mysqli_fetch_assoc($cats_res)) {
+            echo '<option value="' . (int)$cat['category_id'] . '">' . htmlspecialchars($cat['category_name']) . '</option>';
+        }
+    }
+    ?>
+</select>
 </div>
 
-<div class="col-md-6 mb-3">
+<div class="col-md-4 mb-3">
+<label class="form-label">Application Deadline</label>
+<input type="date" class="form-control form-control-lg" name="deadline" required>
+</div>
 
-<label class="form-label">
-Internship Type
-</label>
-
+<div class="col-md-4 mb-3">
+<label class="form-label">Internship Type</label>
 <select class="form-select form-select-lg" name="type" required>
     <option value="">Select Type</option>
     <option value="On-site">On-site</option>

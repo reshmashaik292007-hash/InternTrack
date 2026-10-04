@@ -2,43 +2,40 @@
 session_start();
 include("../config/db.php");
 
-if (!isset($_SESSION['company_id'])) {
+if (!isset($_SESSION['student_id'])) {
     header("Location: login.php");
     exit();
 }
 
-$user_id = $_SESSION['company_id'];
+$user_id = $_SESSION['student_id'];
 
-/* Get company ID */
-$company_query = mysqli_query($conn, "
-    SELECT company_id
-    FROM companies
-    WHERE user_id = '$user_id'
-");
+/* FIXED: Get student ID from user */
+$stmt = mysqli_prepare($conn, "SELECT student_id FROM students WHERE user_id = ?");
+mysqli_stmt_bind_param($stmt, "i", $user_id);
+mysqli_stmt_execute($stmt);
+$result = mysqli_stmt_get_result($stmt);
+$student = mysqli_fetch_assoc($result);
+$student_id = $student['student_id'];
 
-$company = mysqli_fetch_assoc($company_query);
-$company_id = $company['company_id'];
-
-
-/* Get applicants for this company's internships */
-$applicants_query = mysqli_query($conn, "
+/* FIXED: Get student's applications */
+$stmt = mysqli_prepare($conn, "
     SELECT
-        s.full_name,
-        u.email,
+        i.internship_id,
         i.title,
-        s.resume_path,
+        c.company_name,
+        i.location_type,
+        i.stipend,
         a.status,
         a.applied_at
     FROM applications a
-    JOIN students s
-        ON a.student_id = s.student_id
-    JOIN users u
-        ON s.user_id = u.user_id
-    JOIN internships i
-        ON a.internship_id = i.internship_id
-    WHERE i.company_id = '$company_id'
+    JOIN internships i ON a.internship_id = i.internship_id
+    JOIN companies c ON i.company_id = c.company_id
+    WHERE a.student_id = ?
     ORDER BY a.applied_at DESC
 ");
+mysqli_stmt_bind_param($stmt, "i", $student_id);
+mysqli_stmt_execute($stmt);
+$applications_query = mysqli_stmt_get_result($stmt);
 ?>
 
 <!DOCTYPE html>
@@ -50,7 +47,7 @@ $applicants_query = mysqli_query($conn, "
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Applicants | InternLink</title>
+<title>My Applications | InternLink</title>
 
 <link
 href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
@@ -83,47 +80,40 @@ InternLink
 
 </a>
 
-<div class="ms-auto">
+<button class="navbar-toggler"
+type="button"
+data-bs-toggle="collapse"
+data-bs-target="#navbarNav">
 
-<a
-href="dashboard.php"
-class="nav-link d-inline text-white me-3">
+<span class="navbar-toggler-icon"></span>
 
-Dashboard
+</button>
 
-</a>
+<div class="collapse navbar-collapse" id="navbarNav">
 
-<a
-href="post-internship.php"
-class="nav-link d-inline text-white me-3">
+<ul class="navbar-nav ms-auto">
 
-Post Internship
+<li class="nav-item">
+<a class="nav-link" href="dashboard.php">Dashboard</a>
+</li>
 
-</a>
+<li class="nav-item">
+<a class="nav-link" href="internships.php">Internships</a>
+</li>
 
-<a
-href="appllicants.php"
-class="nav-link d-inline text-white me-3">
+<li class="nav-item">
+<a class="nav-link active" href="my-applications.php">My Applications</a>
+</li>
 
-Applicants
+<li class="nav-item">
+<a class="nav-link" href="profile.php">Profile</a>
+</li>
 
-</a>
+<li class="nav-item">
+<a class="nav-link text-warning" href="logout.php">Logout</a>
+</li>
 
-<a
-href="profile.php"
-class="nav-link d-inline text-white me-3">
-
-Profile
-
-</a>
-
-<a
-href="login.php"
-class="nav-link d-inline text-warning">
-
-Logout
-
-</a>
+</ul>
 
 </div>
 
@@ -132,7 +122,7 @@ Logout
 </nav>
 
 
-<!-- Applicants -->
+<!-- My Applications -->
 
 <section class="py-5">
 
@@ -140,7 +130,7 @@ Logout
 
 <h2 class="fw-bold mb-4">
 
-Internship Applicants
+My Applications
 
 </h2>
 
@@ -151,7 +141,7 @@ Internship Applicants
 
 <h5 class="mb-0">
 
-Applicants List
+Application Status
 
 </h5>
 
@@ -168,15 +158,17 @@ Applicants List
 
 <tr>
 
-<th>Name</th>
-
-<th>Email</th>
+<th>Company</th>
 
 <th>Internship</th>
 
-<th>Resume</th>
+<th>Location</th>
+
+<th>Stipend</th>
 
 <th>Status</th>
+
+<th>Applied On</th>
 
 </tr>
 
@@ -188,9 +180,9 @@ Applicants List
 
 <?php
 
-if (mysqli_num_rows($applicants_query) > 0) {
+if (mysqli_num_rows($applications_query) > 0) {
 
-    while ($applicant = mysqli_fetch_assoc($applicants_query)) {
+    while ($application = mysqli_fetch_assoc($applications_query)) {
 
 ?>
 
@@ -199,63 +191,40 @@ if (mysqli_num_rows($applicants_query) > 0) {
 <td>
 
 <?php
-echo htmlspecialchars($applicant['full_name']);
+echo htmlspecialchars($application['company_name']);
 ?>
 
 </td>
-
 
 <td>
 
 <?php
-echo htmlspecialchars($applicant['email']);
+echo htmlspecialchars($application['title']);
 ?>
 
 </td>
-
 
 <td>
 
 <?php
-echo htmlspecialchars($applicant['title']);
+echo htmlspecialchars($application['location_type']);
 ?>
 
 </td>
 
-
 <td>
 
-<?php if (!empty($applicant['resume_path'])) { ?>
-
-<a
-href="../uploads/resumes/<?php echo htmlspecialchars($applicant['resume_path']); ?>"
-target="_blank"
-class="btn btn-sm btn-outline-primary">
-
-<i class="bi bi-file-earmark-text"></i>
-
-View Resume
-
-</a>
-
-<?php } else { ?>
-
-<span class="text-muted">
-
-No Resume
-
-</span>
-
-<?php } ?>
+<?php
+echo htmlspecialchars($application['stipend']);
+?>
 
 </td>
-
 
 <td>
 
 <?php
 
-$status = $applicant['status'];
+$status = $application['status'];
 
 if ($status == 'shortlisted') {
 
@@ -279,6 +248,14 @@ if ($status == 'shortlisted') {
 
 </td>
 
+<td>
+
+<?php
+echo date("d M Y", strtotime($application['applied_at']));
+?>
+
+</td>
+
 </tr>
 
 
@@ -293,10 +270,10 @@ if ($status == 'shortlisted') {
 <tr>
 
 <td
-colspan="5"
+colspan="6"
 class="text-center text-muted py-4">
 
-No applicants yet.
+No applications yet. <a href="internships.php">Browse internships</a>
 
 </td>
 

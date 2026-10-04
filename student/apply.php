@@ -14,20 +14,36 @@ if(!isset($_GET['id'])){
 $internship_id = (int)$_GET['id'];
 $user_id = $_SESSION['student_id'];
 
-$res = mysqli_query($conn,"SELECT student_id,full_name,phone,college_name FROM students WHERE user_id='$user_id'");
-$student = mysqli_fetch_assoc($res);
+// FIXED: Use prepared statement for student query
+$stmt = mysqli_prepare($conn, "SELECT student_id, full_name, phone, college_name FROM students WHERE user_id = ?");
+mysqli_stmt_bind_param($stmt, "i", $user_id);
+mysqli_stmt_execute($stmt);
+$result = mysqli_stmt_get_result($stmt);
+$student = mysqli_fetch_assoc($result);
 
 if(!$student){
     die("Student profile not found.");
 }
 
 if(isset($_POST['apply'])){
-    $check = mysqli_query($conn,"SELECT * FROM applications WHERE internship_id='$internship_id' AND student_id='".$student['student_id']."'");
-    if(mysqli_num_rows($check)>0){
+    // FIXED: Use prepared statement for checking existing application
+    $stmt = mysqli_prepare($conn, "SELECT * FROM applications WHERE internship_id = ? AND student_id = ?");
+    mysqli_stmt_bind_param($stmt, "ii", $internship_id, $student['student_id']);
+    mysqli_stmt_execute($stmt);
+    mysqli_stmt_store_result($stmt);
+
+    if(mysqli_stmt_num_rows($stmt) > 0){
         echo "<script>alert('You have already applied for this internship');</script>";
     }else{
-        mysqli_query($conn,"INSERT INTO applications(internship_id,student_id,status) VALUES('$internship_id','".$student['student_id']."','applied')");
-        echo "<script>alert('Application Submitted Successfully');window.location='my-applications.php';</script>";
+        // FIXED: Use prepared statement for INSERT
+        $stmt = mysqli_prepare($conn, "INSERT INTO applications (internship_id, student_id, status) VALUES (?, ?, 'applied')");
+        mysqli_stmt_bind_param($stmt, "ii", $internship_id, $student['student_id']);
+
+        if(mysqli_stmt_execute($stmt)){
+            echo "<script>alert('Application Submitted Successfully');window.location='my-applications.php';</script>";
+        }else{
+            echo "<script>alert('Error submitting application: " . mysqli_error($conn) . "');</script>";
+        }
     }
 }
 ?>

@@ -8,17 +8,29 @@ if(!isset($_SESSION['admin_id']))
     exit();
 }
 
-// Counts
-$totalStudents = mysqli_num_rows(mysqli_query($conn,"SELECT * FROM students"));
+// FIXED: Use prepared statements for all counts
+$stmt = mysqli_prepare($conn, "SELECT COUNT(*) as count FROM students");
+mysqli_stmt_execute($stmt);
+$result = mysqli_stmt_get_result($stmt);
+$totalStudents = mysqli_fetch_assoc($result)['count'];
 
-$totalCompanies = mysqli_num_rows(mysqli_query($conn,"SELECT * FROM companies"));
+$stmt = mysqli_prepare($conn, "SELECT COUNT(*) as count FROM companies");
+mysqli_stmt_execute($stmt);
+$result = mysqli_stmt_get_result($stmt);
+$totalCompanies = mysqli_fetch_assoc($result)['count'];
 
-$totalInternships = mysqli_num_rows(mysqli_query($conn,"SELECT * FROM internships"));
+$stmt = mysqli_prepare($conn, "SELECT COUNT(*) as count FROM internships");
+mysqli_stmt_execute($stmt);
+$result = mysqli_stmt_get_result($stmt);
+$totalInternships = mysqli_fetch_assoc($result)['count'];
 
-$totalApplications = mysqli_num_rows(mysqli_query($conn,"SELECT * FROM applications"));
+$stmt = mysqli_prepare($conn, "SELECT COUNT(*) as count FROM applications");
+mysqli_stmt_execute($stmt);
+$result = mysqli_stmt_get_result($stmt);
+$totalApplications = mysqli_fetch_assoc($result)['count'];
 
-// Recent Applications
-$recent = mysqli_query($conn,"
+// FIXED: Recent Applications using prepared statement
+$stmt = mysqli_prepare($conn, "
 SELECT
 s.full_name,
 i.title,
@@ -31,6 +43,8 @@ ON a.internship_id=i.internship_id
 ORDER BY a.applied_at DESC
 LIMIT 5
 ");
+mysqli_stmt_execute($stmt);
+$recent = mysqli_stmt_get_result($stmt);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -84,7 +98,7 @@ InternLink
 </li>
 
 <li class="nav-item">
-<a class="nav-link text-warning" href="login.php">Logout</a>
+<a class="nav-link text-warning" href="logout.php">Logout</a>
 </li>
 
 </ul>

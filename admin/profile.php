@@ -15,6 +15,40 @@
 
 <body>
 
+<?php
+session_start();
+include("../config/db.php");
+
+if(!isset($_SESSION['admin_id']))
+{
+    header("Location: login.php");
+    exit();
+}
+
+// FIXED: Get admin profile from database
+$user_id = $_SESSION['admin_id'];
+
+$stmt = mysqli_prepare($conn, "
+    SELECT
+        a.admin_id,
+        a.full_name,
+        u.email,
+        u.status,
+        u.last_login
+    FROM admins a
+    JOIN users u ON a.user_id = u.user_id
+    WHERE a.user_id = ?
+");
+mysqli_stmt_bind_param($stmt, "i", $user_id);
+mysqli_stmt_execute($stmt);
+$result = mysqli_stmt_get_result($stmt);
+$admin = mysqli_fetch_assoc($result);
+
+if (!$admin) {
+    die("Admin profile not found.");
+}
+?>
+
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
 
 <div class="container">
@@ -81,7 +115,7 @@ InternLink
 
 <i class="bi bi-person-circle display-1 text-primary"></i>
 
-<h2 class="mt-3">Administrator</h2>
+<h2 class="mt-3"><?php echo htmlspecialchars($admin['full_name']); ?></h2>
 
 <p class="text-muted">System Administrator</p>
 
@@ -89,20 +123,31 @@ InternLink
 
 <div class="text-start">
 
-<p><strong>Name:</strong> Admin</p>
+<p><strong>Name:</strong> <?php echo htmlspecialchars($admin['full_name']); ?></p>
 
-<p><strong>Email:</strong> admin@internlink.com</p>
-
-<p><strong>Phone:</strong> +91 9876543210</p>
+<p><strong>Email:</strong> <?php echo htmlspecialchars($admin['email']); ?></p>
 
 <p><strong>Role:</strong> Super Admin</p>
 
-<p><strong>Location:</strong> Hyderabad, India</p>
+<p><strong>Status:</strong>
+<?php
+$status = htmlspecialchars($admin['status']);
+if ($status == 'active') {
+    echo '<span class="badge bg-success">Active</span>';
+} else {
+    echo '<span class="badge bg-warning">Inactive</span>';
+}
+?>
+</p>
+
+<p><strong>Last Login:</strong> <?php echo $admin['last_login'] ? date("d M Y H:i", strtotime($admin['last_login'])) : 'Never'; ?></p>
 
 </div>
 
 <button class="btn btn-primary mt-3">
+
 Edit Profile
+
 </button>
 
 </div>

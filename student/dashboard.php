@@ -1,3 +1,62 @@
+<?php
+session_start();
+include("../config/db.php");
+
+if (!isset($_SESSION['student_id'])) {
+    header("Location: login.php");
+    exit();
+}
+
+$user_id = $_SESSION['student_id'];
+
+// FIXED: Get student name
+$stmt = mysqli_prepare($conn, "SELECT full_name FROM students WHERE user_id = ?");
+mysqli_stmt_bind_param($stmt, "i", $user_id);
+mysqli_stmt_execute($stmt);
+$result = mysqli_stmt_get_result($stmt);
+$student_data = mysqli_fetch_assoc($result);
+$student_name = $student_data['full_name'] ?? 'Student';
+
+// FIXED: Get student ID
+$stmt = mysqli_prepare($conn, "SELECT student_id FROM students WHERE user_id = ?");
+mysqli_stmt_bind_param($stmt, "i", $user_id);
+mysqli_stmt_execute($stmt);
+$result = mysqli_stmt_get_result($stmt);
+$student_row = mysqli_fetch_assoc($result);
+$student_id = $student_row['student_id'];
+
+// FIXED: Count available internships (is_active = 1)
+$stmt = mysqli_prepare($conn, "SELECT COUNT(*) as count FROM internships WHERE is_active = 1");
+mysqli_stmt_execute($stmt);
+$result = mysqli_stmt_get_result($stmt);
+$total_internships = mysqli_fetch_assoc($result)['count'];
+
+// FIXED: Count student's applications
+$stmt = mysqli_prepare($conn, "SELECT COUNT(*) as count FROM applications WHERE student_id = ?");
+mysqli_stmt_bind_param($stmt, "i", $student_id);
+mysqli_stmt_execute($stmt);
+$result = mysqli_stmt_get_result($stmt);
+$total_applications = mysqli_fetch_assoc($result)['count'];
+
+// FIXED: Count student's shortlisted applications
+$stmt = mysqli_prepare($conn, "SELECT COUNT(*) as count FROM applications WHERE student_id = ? AND status = 'shortlisted'");
+mysqli_stmt_bind_param($stmt, "i", $student_id);
+mysqli_stmt_execute($stmt);
+$result = mysqli_stmt_get_result($stmt);
+$total_shortlisted = mysqli_fetch_assoc($result)['count'];
+
+// FIXED: Get latest internships
+$stmt = mysqli_prepare($conn, "
+    SELECT i.internship_id, i.title, c.company_name, i.location_type
+    FROM internships i
+    JOIN companies c ON i.company_id = c.company_id
+    WHERE i.is_active = 1
+    ORDER BY i.created_at DESC
+    LIMIT 5
+");
+mysqli_stmt_execute($stmt);
+$latest_internships = mysqli_stmt_get_result($stmt);
+?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -79,7 +138,7 @@ Profile
 
 <li class="nav-item">
 
-<a class="nav-link text-warning" href="login.php">
+<a class="nav-link text-warning" href="logout.php">
 
 Logout
 
@@ -101,7 +160,7 @@ Logout
 
 <h2 class="fw-bold mb-4">
 
-Welcome, Student 👋
+Welcome, <?php echo htmlspecialchars($student_name); ?> 👋
 
 </h2>
 
@@ -113,7 +172,7 @@ Welcome, Student 👋
 
 <i class="bi bi-briefcase-fill display-4 text-primary"></i>
 
-<h3 class="mt-3">25</h3>
+<h3 class="mt-3"><?php echo $total_internships; ?></h3>
 
 <p class="mb-0">Available Internships</p>
 
@@ -127,7 +186,7 @@ Welcome, Student 👋
 
 <i class="bi bi-send-fill display-4 text-success"></i>
 
-<h3 class="mt-3">8</h3>
+<h3 class="mt-3"><?php echo $total_applications; ?></h3>
 
 <p class="mb-0">Applications Sent</p>
 
@@ -141,7 +200,7 @@ Welcome, Student 👋
 
 <i class="bi bi-check-circle-fill display-4 text-warning"></i>
 
-<h3 class="mt-3">3</h3>
+<h3 class="mt-3"><?php echo $total_shortlisted; ?></h3>
 
 <p class="mb-0">Shortlisted</p>
 
@@ -185,17 +244,22 @@ Latest Internships
 
 <tbody>
 
+<?php
+if ($latest_internships && mysqli_num_rows($latest_internships) > 0) {
+    while ($internship = mysqli_fetch_assoc($latest_internships)) {
+?>
+
 <tr>
 
-<td>Google</td>
+<td><?php echo htmlspecialchars($internship['company_name']); ?></td>
 
-<td>Frontend Developer</td>
+<td><?php echo htmlspecialchars($internship['title']); ?></td>
 
-<td>Hyderabad</td>
+<td><?php echo htmlspecialchars($internship['location_type']); ?></td>
 
 <td>
 
-<a href="#" class="btn btn-sm btn-primary">
+<a href="apply.php?id=<?php echo $internship['internship_id']; ?>" class="btn btn-sm btn-primary">
 
 Apply
 
@@ -205,64 +269,16 @@ Apply
 
 </tr>
 
+<?php
+    }
+} else {
+?>
 <tr>
-
-<td>Microsoft</td>
-
-<td>Data Analyst</td>
-
-<td>Bengaluru</td>
-
-<td>
-
-<a href="#" class="btn btn-sm btn-primary">
-
-Apply
-
-</a>
-
-</td>
-
+    <td colspan="4" class="text-center text-muted py-4">No internships available.</td>
 </tr>
-<tr>
-
-<td>Amazon</td>
-
-<td>Cloud Engineer</td>
-
-<td>Chennai</td>
-
-<td>
-
-<a href="#" class="btn btn-sm btn-primary">
-
-Apply
-
-</a>
-
-</td>
-
-</tr>
-
-<tr>
-
-<td>Infosys</td>
-
-<td>Python Developer</td>
-
-<td>Hyderabad</td>
-
-<td>
-
-<a href="#" class="btn btn-sm btn-primary">
-
-Apply
-
-</a>
-
-</td>
-
-</tr>
+<?php
+}
+?>
 
 </tbody>
 
@@ -289,6 +305,8 @@ Apply
 </div>
 
 </footer>
+
+<script src="../assets/js/script.js"></script>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
