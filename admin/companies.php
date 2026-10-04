@@ -15,6 +15,34 @@
 
 <body>
 
+<?php
+session_start();
+include("../config/db.php");
+
+if(!isset($_SESSION['admin_id']))
+{
+    header("Location: login.php");
+    exit();
+}
+
+// FIXED: Get all companies from database
+$stmt = mysqli_prepare($conn, "
+    SELECT
+        c.company_id,
+        c.company_name,
+        u.email,
+        c.location,
+        u.status,
+        c.is_verified
+    FROM companies c
+    JOIN users u ON c.user_id = u.user_id
+    ORDER BY c.company_id DESC
+");
+mysqli_stmt_execute($stmt);
+$companies_result = mysqli_stmt_get_result($stmt);
+$total_companies = mysqli_num_rows($companies_result);
+?>
+
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
 
 <div class="container">
@@ -45,6 +73,10 @@ InternLink
 
 <li class="nav-item">
 <a class="nav-link" href="internships.php">Internships</a>
+</li>
+
+<li class="nav-item">
+<a class="nav-link" href="applications.php">Applications</a>
 </li>
 
 <li class="nav-item">
@@ -83,6 +115,7 @@ Manage Companies
 <th>Company</th>
 <th>Email</th>
 <th>Location</th>
+<th>Verified</th>
 <th>Status</th>
 
 </tr>
@@ -91,65 +124,65 @@ Manage Companies
 
 <tbody>
 
+<?php
+
+if ($total_companies > 0) {
+
+    while ($company = mysqli_fetch_assoc($companies_result)) {
+?>
+
 <tr>
 
-<td>201</td>
-<td>Google</td>
-<td>google@gmail.com</td>
-<td>Hyderabad</td>
+<td><?php echo htmlspecialchars($company['company_id']); ?></td>
+<td><?php echo htmlspecialchars($company['company_name']); ?></td>
+<td><?php echo htmlspecialchars($company['email']); ?></td>
+<td><?php echo htmlspecialchars($company['location'] ?? 'N/A'); ?></td>
 
 <td>
-<span class="badge bg-success">
-Active
-</span>
+
+<?php
+$is_verified = $company['is_verified'];
+echo ($is_verified == 1) ? '<span class="badge bg-success">Verified</span>' : '<span class="badge bg-warning text-dark">Pending</span>';
+?>
+
+</td>
+
+<td>
+
+<?php
+
+$status = htmlspecialchars($company['status']);
+
+if ($status == 'active') {
+    echo '<span class="badge bg-success">Active</span>';
+} elseif ($status == 'pending') {
+    echo '<span class="badge bg-warning text-dark">Pending</span>';
+} else {
+    echo '<span class="badge bg-danger">Blocked</span>';
+}
+
+?>
+
 </td>
 
 </tr>
 
-<tr>
+<?php
+    }
 
-<td>202</td>
-<td>Microsoft</td>
-<td>microsoft@gmail.com</td>
-<td>Bangalore</td>
-
-<td>
-<span class="badge bg-success">
-Active
-</span>
-</td>
-
-</tr>
+} else {
+?>
 
 <tr>
-
-<td>203</td>
-<td>Infosys</td>
-<td>infosys@gmail.com</td>
-<td>Pune</td>
-
-<td>
-<span class="badge bg-warning text-dark">
-Pending
-</span>
+<td colspan="6" class="text-center text-muted py-4">
+No companies registered yet
 </td>
-
 </tr>
 
-<tr>
+<?php
+}
 
-<td>204</td>
-<td>TCS</td>
-<td>tcs@gmail.com</td>
-<td>Chennai</td>
-
-<td>
-<span class="badge bg-danger">
-Blocked
-</span>
-</td>
-
-</tr>
+?>
 
 </tbody>
 

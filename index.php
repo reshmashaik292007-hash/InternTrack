@@ -1,3 +1,45 @@
+<?php
+include("config/db.php");
+
+$search_title = "";
+$search_location = "";
+
+// Handle search from index
+if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
+    $search_title = trim($_POST['search_title'] ?? '');
+    $search_location = trim($_POST['search_location'] ?? '');
+
+    if (!empty($search_title) || !empty($search_location)) {
+        // Redirect to search page with query params
+        $query_params = [];
+        if (!empty($search_title)) $query_params['search_title'] = $search_title;
+        if (!empty($search_location)) $query_params['search_location'] = $search_location;
+        $redirect_url = "search.php?" . http_build_query($query_params);
+        header("Location: $redirect_url");
+        exit();
+    }
+}
+
+// Get featured internships (is_active = 1, order by deadline)
+$featured_query = "SELECT i.internship_id, i.title, i.stipend, i.duration, i.location_type, c.company_name
+                   FROM internships i
+                   JOIN companies c ON i.company_id = c.company_id
+                   WHERE i.is_active = 1
+                   ORDER BY i.deadline ASC
+                   LIMIT 6";
+$featured_result = mysqli_query($conn, $featured_query);
+
+// Get stats for home page
+$stats = ['companies' => 0, 'internships' => 0, 'students' => 0, 'applications' => 0];
+$r = mysqli_query($conn, "SELECT COUNT(*) as c FROM companies");
+if ($r) $stats['companies'] = mysqli_fetch_assoc($r)['c'];
+$r = mysqli_query($conn, "SELECT COUNT(*) as c FROM internships WHERE is_active = 1");
+if ($r) $stats['internships'] = mysqli_fetch_assoc($r)['c'];
+$r = mysqli_query($conn, "SELECT COUNT(*) as c FROM students");
+if ($r) $stats['students'] = mysqli_fetch_assoc($r)['c'];
+$r = mysqli_query($conn, "SELECT COUNT(*) as c FROM applications");
+if ($r) $stats['applications'] = mysqli_fetch_assoc($r)['c'];
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -17,7 +59,6 @@
     <!-- Custom CSS -->
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
-
 <body>
 
 <!-- ================= NAVBAR ================= -->
@@ -25,7 +66,7 @@
 <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm sticky-top">
     <div class="container">
 
-        <a class="navbar-brand fw-bold text-primary fs-3" href="#">
+        <a class="navbar-brand fw-bold text-primary fs-3" href="index.php">
             InternLink
         </a>
 
@@ -42,15 +83,15 @@
             <ul class="navbar-nav ms-auto align-items-lg-center">
 
                 <li class="nav-item">
-                    <a class="nav-link active" href="#">Home</a>
+                    <a class="nav-link active" href="index.php">Home</a>
                 </li>
 
                 <li class="nav-item">
-                    <a class="nav-link" href="#">Internships</a>
+                    <a class="nav-link" href="internships.php">Internships</a>
                 </li>
 
                 <li class="nav-item">
-                    <a class="nav-link" href="#">Companies</a>
+                    <a class="nav-link" href="companies.php">Companies</a>
                 </li>
 
                 <li class="nav-item">
@@ -105,13 +146,13 @@ and apply for internships with just one click.
 
 <div class="mt-4">
 
-<a href="#" class="btn btn-primary btn-lg me-2">
+<a href="internships.php" class="btn btn-primary btn-lg me-2">
 
 Explore Internships
 
 </a>
 
-<a href="#" class="btn btn-outline-primary btn-lg">
+<a href="company/register.php" class="btn btn-outline-primary btn-lg">
 
 Post Internship
 
@@ -145,14 +186,18 @@ alt="Students">
 
 <div class="card-body p-4">
 
+<form method="POST" action="">
+
 <div class="row g-3">
 
 <div class="col-md-5">
 
 <input
 type="text"
+name="search_title"
 class="form-control form-control-lg"
-placeholder="Job Title">
+placeholder="Job Title"
+value="<?php echo htmlspecialchars($search_title); ?>">
 
 </div>
 
@@ -160,14 +205,17 @@ placeholder="Job Title">
 
 <input
 type="text"
+name="search_location"
 class="form-control form-control-lg"
-placeholder="Location">
+placeholder="Location"
+value="<?php echo htmlspecialchars($search_location); ?>">
 
 </div>
 
 <div class="col-md-3">
 
 <button
+type="submit"
 class="btn btn-primary btn-lg w-100">
 
 Search
@@ -177,6 +225,8 @@ Search
 </div>
 
 </div>
+
+</form>
 
 </div>
 
@@ -201,53 +251,23 @@ Search
 
 <div class="row g-4">
 
+<?php
+// Get categories from database
+$cat_result = mysqli_query($conn, "SELECT category_name FROM categories LIMIT 6");
+$cat_icons = ['code-slash', 'phone', 'palette', 'bar-chart-line', 'megaphone', 'brush'];
+$cat_colors = ['primary', 'success', 'secondary', 'danger', 'warning', 'info'];
+$i = 0;
+while ($cat = mysqli_fetch_assoc($cat_result)) {
+    $icon = $cat_icons[$i % count($cat_icons)];
+    $color = $cat_colors[$i % count($cat_colors)];
+?>
 <div class="col-md-4">
 <div class="card shadow-sm text-center p-4 h-100">
-<i class="bi bi-code-slash display-4 text-primary"></i>
-<h4 class="mt-3">Web Development</h4>
-<p>Frontend & Backend Internship</p>
+<i class="bi bi-<?php echo $icon; ?> display-4 text-<?php echo $color; ?>"></i>
+<h4 class="mt-3"><?php echo htmlspecialchars($cat['category_name']); ?></h4>
 </div>
 </div>
-
-<div class="col-md-4">
-<div class="card shadow-sm text-center p-4 h-100">
-<i class="bi bi-cpu display-4 text-success"></i>
-<h4 class="mt-3">AI & Machine Learning</h4>
-<p>Build intelligent applications</p>
-</div>
-</div>
-
-<div class="col-md-4">
-<div class="card shadow-sm text-center p-4 h-100">
-<i class="bi bi-bar-chart-line display-4 text-danger"></i>
-<h4 class="mt-3">Data Science</h4>
-<p>Analytics & Visualization</p>
-</div>
-</div>
-
-<div class="col-md-4">
-<div class="card shadow-sm text-center p-4 h-100">
-<i class="bi bi-shield-lock display-4 text-warning"></i>
-<h4 class="mt-3">Cyber Security</h4>
-<p>Security & Ethical Hacking</p>
-</div>
-</div>
-
-<div class="col-md-4">
-<div class="card shadow-sm text-center p-4 h-100">
-<i class="bi bi-phone display-4 text-info"></i>
-<h4 class="mt-3">App Development</h4>
-<p>Android & iOS</p>
-</div>
-</div>
-
-<div class="col-md-4">
-<div class="card shadow-sm text-center p-4 h-100">
-<i class="bi bi-palette display-4 text-secondary"></i>
-<h4 class="mt-3">UI / UX Design</h4>
-<p>Creative Designing</p>
-</div>
-</div>
+<?php $i++; } ?>
 
 </div>
 
@@ -269,82 +289,60 @@ Search
 
 <div class="row g-4">
 
-<div class="col-lg-4">
-<div class="card shadow h-100">
-<div class="card-body">
-<h4>Frontend Developer</h4>
-<h6 class="text-primary">Google</h6>
-<p>📍 Hyderabad</p>
-<p>💰 ₹25,000/month</p>
-<p>⏳ 6 Months</p>
-<a href="#" class="btn btn-primary w-100">Apply Now</a>
-</div>
-</div>
+<?php if (mysqli_num_rows($featured_result) > 0): ?>
+    <?php while($row = mysqli_fetch_assoc($featured_result)): ?>
+    <div class="col-lg-4">
+    <div class="card shadow h-100">
+    <div class="card-body">
+    <h4><?php echo htmlspecialchars($row['title']); ?></h4>
+    <h6 class="text-primary"><?php echo htmlspecialchars($row['company_name']); ?></h6>
+    <p>📍 <?php echo htmlspecialchars($row['location_type']); ?></p>
+    <p>💰 <?php echo htmlspecialchars($row['stipend']); ?>/month</p>
+    <p>⏳ <?php echo htmlspecialchars($row['duration']); ?></p>
+    <a href="student/internship-details.php?id=<?php echo $row['internship_id']; ?>" class="btn btn-primary w-100">View Details</a>
+    </div>
+    </div>
+    </div>
+    <?php endwhile; ?>
+<?php else: ?>
+    <div class="col-12 text-center">
+        <p class="text-muted">No internships available.</p>
+    </div>
+<?php endif; ?>
+
 </div>
 
-<div class="col-lg-4">
-<div class="card shadow h-100">
-<div class="card-body">
-<h4>Data Analyst</h4>
-<h6 class="text-primary">Microsoft</h6>
-<p>📍 Bangalore</p>
-<p>💰 ₹30,000/month</p>
-<p>⏳ 6 Months</p>
-<a href="#" class="btn btn-primary w-100">Apply Now</a>
-</div>
-</div>
+<div class="text-center mt-4">
+    <a href="internships.php" class="btn btn-outline-primary btn-lg">View All Internships</a>
 </div>
 
-<div class="col-lg-4">
-<div class="card shadow h-100">
-<div class="card-body">
-<h4>Python Developer</h4>
-<h6 class="text-primary">Infosys</h6>
-<p>📍 Chennai</p>
-<p>💰 ₹22,000/month</p>
-<p>⏳ 4 Months</p>
-<a href="#" class="btn btn-primary w-100">Apply Now</a>
-</div>
-</div>
 </div>
 
-<div class="col-lg-4">
-<div class="card shadow h-100">
-<div class="card-body">
-<h4>UI Designer</h4>
-<h6 class="text-primary">Adobe</h6>
-<p>📍 Pune</p>
-<p>💰 ₹20,000/month</p>
-<p>⏳ 3 Months</p>
-<a href="#" class="btn btn-primary w-100">Apply Now</a>
-</div>
-</div>
-</div>
+</section>
 
-<div class="col-lg-4">
-<div class="card shadow h-100">
-<div class="card-body">
-<h4>Java Developer</h4>
-<h6 class="text-primary">TCS</h6>
-<p>📍 Hyderabad</p>
-<p>💰 ₹18,000/month</p>
-<p>⏳ 6 Months</p>
-<a href="#" class="btn btn-primary w-100">Apply Now</a>
-</div>
-</div>
-</div>
+<!-- ================= STATS SECTION ================= -->
 
-<div class="col-lg-4">
-<div class="card shadow h-100">
-<div class="card-body">
-<h4>Cloud Engineer</h4>
-<h6 class="text-primary">Amazon</h6>
-<p>📍 Bengaluru</p>
-<p>💰 ₹35,000/month</p>
-<p>⏳ 6 Months</p>
-<a href="#" class="btn btn-primary w-100">Apply Now</a>
+<section class="py-5 bg-light">
+
+<div class="container">
+
+<div class="row text-center">
+
+<div class="col-md-3 mb-4">
+    <h3 class="display-5 fw-bold text-primary"><?php echo $stats['companies']; ?></h3>
+    <p class="text-muted">Active Companies</p>
 </div>
+<div class="col-md-3 mb-4">
+    <h3 class="display-5 fw-bold text-primary"><?php echo $stats['students']; ?></h3>
+    <p class="text-muted">Active Students</p>
 </div>
+<div class="col-md-3 mb-4">
+    <h3 class="display-5 fw-bold text-primary"><?php echo $stats['internships']; ?></h3>
+    <p class="text-muted">Internship Positions</p>
+</div>
+<div class="col-md-3 mb-4">
+    <h3 class="display-5 fw-bold text-primary"><?php echo $stats['applications']; ?></h3>
+    <p class="text-muted">Total Applications</p>
 </div>
 
 </div>
@@ -355,7 +353,7 @@ Search
 
 <!-- ================= TOP COMPANIES ================= -->
 
-<section class="py-5 bg-light">
+<section class="py-5">
 
 <div class="container">
 
@@ -365,15 +363,17 @@ Search
 
 </div>
 
-<div class="row text-center">
-
-<div class="col-md-2"><h5>Google</h5></div>
-<div class="col-md-2"><h5>Microsoft</h5></div>
-<div class="col-md-2"><h5>Amazon</h5></div>
-<div class="col-md-2"><h5>TCS</h5></div>
-<div class="col-md-2"><h5>Infosys</h5></div>
-<div class="col-md-2"><h5>Deloitte</h5></div>
-
+<div class="row text-center justify-content-center">
+<?php
+$company_result = mysqli_query($conn, "SELECT company_name FROM companies ORDER BY is_featured DESC, company_id DESC LIMIT 6");
+if ($company_result && mysqli_num_rows($company_result) > 0) {
+    while ($company = mysqli_fetch_assoc($company_result)) {
+        echo '<div class="col-md-2"><h5>' . htmlspecialchars($company['company_name']) . '</h5></div>';
+    }
+} else {
+    echo '<div class="col-12"><p class="text-muted">No companies available.</p></div>';
+}
+?>
 </div>
 
 </div>
@@ -429,4 +429,39 @@ The easiest way to connect students with companies.
 </div>
 </div>
 
-</
+</div>
+
+</div>
+
+</section>
+
+<!-- ================= FOOTER ================= -->
+
+<footer class="bg-dark text-white py-5 mt-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-4 mb-4">
+                <h5>InternLink</h5>
+                <p>Connecting students with amazing internship opportunities.</p>
+            </div>
+            <div class="col-md-4 mb-4">
+                <h5>Quick Links</h5>
+                <ul class="list-unstyled">
+                    <li><a href="index.php" class="text-white-50 text-decoration-none">Home</a></li>
+                    <li><a href="internships.php" class="text-white-50 text-decoration-none">Internships</a></li>
+                    <li><a href="companies.php" class="text-white-50 text-decoration-none">Companies</a></li>
+                </ul>
+            </div>
+            <div class="col-md-4 mb-4">
+                <h5>Contact</h5>
+                <p class="text-white-50">info@internlink.com<br>+1 (555) 123-4567</p>
+            </div>
+        </div>
+        <hr class="bg-white-50">
+        <p class="text-center text-white-50 mb-0">&copy; 2026 InternLink. All rights reserved.</p>
+    </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

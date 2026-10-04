@@ -15,6 +15,33 @@
 
 <body>
 
+<?php
+session_start();
+include("../config/db.php");
+
+if(!isset($_SESSION['admin_id']))
+{
+    header("Location: login.php");
+    exit();
+}
+
+// FIXED: Get all students from database
+$stmt = mysqli_prepare($conn, "
+    SELECT
+        s.student_id,
+        s.full_name,
+        u.email,
+        s.college_name,
+        u.status
+    FROM students s
+    JOIN users u ON s.user_id = u.user_id
+    ORDER BY s.student_id DESC
+");
+mysqli_stmt_execute($stmt);
+$students_result = mysqli_stmt_get_result($stmt);
+$total_students = mysqli_num_rows($students_result);
+?>
+
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
 
 <div class="container">
@@ -47,6 +74,10 @@ InternLink
 
 <li class="nav-item">
 <a class="nav-link" href="internships.php">Internships</a>
+</li>
+
+<li class="nav-item">
+<a class="nav-link" href="applications.php">Applications</a>
 </li>
 
 <li class="nav-item">
@@ -93,81 +124,56 @@ Manage Students
 
 <tbody>
 
+<?php
+
+if ($total_students > 0) {
+
+    while ($student = mysqli_fetch_assoc($students_result)) {
+?>
+
 <tr>
 
-<td>101</td>
-<td>Rahul Sharma</td>
-<td>rahul@gmail.com</td>
-<td>ABC Engineering College</td>
+<td><?php echo htmlspecialchars($student['student_id']); ?></td>
+<td><?php echo htmlspecialchars($student['full_name']); ?></td>
+<td><?php echo htmlspecialchars($student['email']); ?></td>
+<td><?php echo htmlspecialchars($student['college_name']); ?></td>
 
 <td>
 
-<span class="badge bg-success">
+<?php
 
-Active
+$status = htmlspecialchars($student['status']);
 
-</span>
+if ($status == 'active') {
+    echo '<span class="badge bg-success">Active</span>';
+} elseif ($status == 'pending') {
+    echo '<span class="badge bg-warning text-dark">Pending</span>';
+} else {
+    echo '<span class="badge bg-danger">Inactive</span>';
+}
+
+?>
 
 </td>
 
 </tr>
 
-<tr>
+<?php
+    }
 
-<td>102</td>
-<td>Priya Reddy</td>
-<td>priya@gmail.com</td>
-<td>XYZ Engineering College</td>
-
-<td>
-
-<span class="badge bg-success">
-
-Active
-
-</span>
-
-</td>
-
-</tr>
+} else {
+?>
 
 <tr>
-
-<td>103</td>
-<td>Arjun Kumar</td>
-<td>arjun@gmail.com</td>
-<td>SRKR Engineering College</td>
-
-<td>
-
-<span class="badge bg-warning text-dark">
-
-Pending
-
-</span>
-
+<td colspan="5" class="text-center text-muted py-4">
+No students registered yet
 </td>
-
 </tr>
 
-<tr>
+<?php
+}
 
-<td>104</td>
-<td>Sneha Patel</td>
-<td>sneha@gmail.com</td>
-<td>GVP College</td>
-
-<td>
-
-<span class="badge bg-danger">
-
-Blocked
-
-</span>
-
-</td>
-
-</tr>
+?>
 
 </tbody>
 

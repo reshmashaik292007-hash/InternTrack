@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Admin Profile | InternLink</title>
+<title>Manage Applications | InternLink</title>
 
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="../assets/css/style.css">
@@ -14,6 +14,38 @@
 </head>
 
 <body>
+
+<?php
+session_start();
+include("../config/db.php");
+
+if(!isset($_SESSION['admin_id']))
+{
+    header("Location: login.php");
+    exit();
+}
+
+// FIXED: Get all applications from database
+$stmt = mysqli_prepare($conn, "
+    SELECT
+        a.application_id,
+        s.full_name as student_name,
+        u.email as student_email,
+        i.title as internship_title,
+        c.company_name,
+        a.status,
+        a.applied_at
+    FROM applications a
+    JOIN students s ON a.student_id = s.student_id
+    JOIN users u ON s.user_id = u.user_id
+    JOIN internships i ON a.internship_id = i.internship_id
+    JOIN companies c ON i.company_id = c.company_id
+    ORDER BY a.applied_at DESC
+");
+mysqli_stmt_execute($stmt);
+$applications_result = mysqli_stmt_get_result($stmt);
+$total_applications = mysqli_num_rows($applications_result);
+?>
 
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
 
@@ -24,7 +56,9 @@ InternLink
 </a>
 
 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+
 <span class="navbar-toggler-icon"></span>
+
 </button>
 
 <div class="collapse navbar-collapse" id="navbarNav">
@@ -48,11 +82,7 @@ InternLink
 </li>
 
 <li class="nav-item">
-<a class="nav-link" href="applications.php">Applications</a>
-</li>
-
-<li class="nav-item">
-<a class="nav-link active" href="#">Profile</a>
+<a class="nav-link active" href="#">Applications</a>
 </li>
 
 <li class="nav-item">
@@ -71,41 +101,96 @@ InternLink
 
 <div class="container">
 
-<div class="row justify-content-center">
+<h2 class="fw-bold mb-4">
 
-<div class="col-lg-6">
+Manage Applications
+
+</h2>
 
 <div class="card shadow border-0">
 
-<div class="card-body text-center">
+<div class="card-body">
 
-<i class="bi bi-person-circle display-1 text-primary"></i>
+<div class="table-responsive">
 
-<h2 class="mt-3">Administrator</h2>
+<table class="table table-hover align-middle">
 
-<p class="text-muted">System Administrator</p>
+<thead class="table-primary">
 
-<hr>
+<tr>
 
-<div class="text-start">
+<th>ID</th>
+<th>Student</th>
+<th>Email</th>
+<th>Company</th>
+<th>Internship</th>
+<th>Status</th>
+<th>Applied On</th>
 
-<p><strong>Name:</strong> Admin</p>
+</tr>
 
-<p><strong>Email:</strong> admin@internlink.com</p>
+</thead>
 
-<p><strong>Phone:</strong> +91 9876543210</p>
+<tbody>
 
-<p><strong>Role:</strong> Super Admin</p>
+<?php
 
-<p><strong>Location:</strong> Hyderabad, India</p>
+if ($total_applications > 0) {
 
-</div>
+    while ($application = mysqli_fetch_assoc($applications_result)) {
+?>
 
-<button class="btn btn-primary mt-3">
-Edit Profile
-</button>
+<tr>
+<td><?php echo htmlspecialchars($application['application_id']); ?></td>
+<td><?php echo htmlspecialchars($application['student_name']); ?></td>
+<td><?php echo htmlspecialchars($application['student_email']); ?></td>
+<td><?php echo htmlspecialchars($application['company_name']); ?></td>
+<td><?php echo htmlspecialchars($application['internship_title']); ?></td>
 
-</div>
+<td>
+
+<?php
+
+$status = htmlspecialchars($application['status']);
+
+if ($status == 'shortlisted') {
+    echo '<span class="badge bg-success">Shortlisted</span>';
+} elseif ($status == 'accepted') {
+    echo '<span class="badge bg-primary">Accepted</span>';
+} elseif ($status == 'rejected') {
+    echo '<span class="badge bg-danger">Rejected</span>';
+} else {
+    echo '<span class="badge bg-warning text-dark">Applied</span>';
+}
+
+?>
+
+</td>
+
+<td><?php echo date("d M Y", strtotime($application['applied_at'])); ?></td>
+
+</tr>
+
+<?php
+    }
+
+} else {
+?>
+
+<tr>
+<td colspan="7" class="text-center text-muted py-4">
+No applications submitted yet
+</td>
+</tr>
+
+<?php
+}
+
+?>
+
+</tbody>
+
+</table>
 
 </div>
 
@@ -122,7 +207,9 @@ Edit Profile
 <div class="container">
 
 <p class="mb-0">
+
 © 2026 InternLink | All Rights Reserved
+
 </p>
 
 </div>

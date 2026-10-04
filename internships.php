@@ -3,48 +3,38 @@ include("config/db.php");
 
 $search_title = "";
 $search_location = "";
-$search_company = "";
 $where_conditions = ["i.is_active = 1"];
 $params = [];
 $param_types = "";
 
 // Handle search
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $search_title = trim($_POST['search_title'] ?? '');
-    $search_location = trim($_POST['search_location'] ?? '');
-    $search_company = trim($_POST['search_company'] ?? '');
-} else {
-    $search_title = trim($_GET['search_title'] ?? '');
-    $search_location = trim($_GET['search_location'] ?? '');
-    $search_company = trim($_GET['search_company'] ?? '');
-}
+if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' || (isset($_GET['search']) && $_GET['search'] !== '')) {
+    if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
+        $search_title = trim($_POST['search_title'] ?? '');
+        $search_location = trim($_POST['search_location'] ?? '');
+    } else {
+        $search_title = trim($_GET['search'] ?? '');
+        $search_location = trim($_GET['location'] ?? '');
+    }
 
-if (!empty($search_title)) {
-    $where_conditions[] = "(i.title LIKE ? OR i.description LIKE ? OR i.requirements LIKE ?)";
-    $search_pattern = "%" . $search_title . "%";
-    $params[] = $search_pattern;
-    $params[] = $search_pattern;
-    $params[] = $search_pattern;
-    $param_types .= "sss";
-}
+    if (!empty($search_title)) {
+        $where_conditions[] = "(i.title LIKE ? OR i.description LIKE ?)";
+        $search_pattern = "%" . $search_title . "%";
+        $params[] = $search_pattern;
+        $params[] = $search_pattern;
+        $param_types .= "ss";
+    }
 
-if (!empty($search_location)) {
-    $where_conditions[] = "(i.location_type LIKE ? OR c.location LIKE ?)";
-    $search_pattern = "%" . $search_location . "%";
-    $params[] = $search_pattern;
-    $params[] = $search_pattern;
-    $param_types .= "ss";
-}
-
-if (!empty($search_company)) {
-    $where_conditions[] = "c.company_name LIKE ?";
-    $params[] = "%" . $search_company . "%";
-    $param_types .= "s";
+    if (!empty($search_location)) {
+        $where_conditions[] = "i.location_type LIKE ?";
+        $params[] = "%" . $search_location . "%";
+        $param_types .= "s";
+    }
 }
 
 // Build final query
 $where_clause = implode(" AND ", $where_conditions);
-$query = "SELECT i.internship_id, i.title, i.description, i.stipend, i.duration, i.location_type, i.deadline, c.company_name, c.logo
+$query = "SELECT i.internship_id, i.title, i.stipend, i.duration, i.location_type, c.company_name
           FROM internships i
           JOIN companies c ON i.company_id = c.company_id
           WHERE $where_clause
@@ -63,15 +53,13 @@ if (!empty($params)) {
 } else {
     $result = mysqli_query($conn, $query);
 }
-
-$search_results_count = mysqli_num_rows($result);
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Search Results - InternLink</title>
+    <title>All Internships - InternLink</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -123,98 +111,76 @@ $search_results_count = mysqli_num_rows($result);
 <!-- ================= PAGE HEADER ================= -->
 <section class="py-5 bg-light">
     <div class="container">
-        <h1 class="display-4 fw-bold mb-3">Search Results</h1>
-        <p class="lead text-muted">
-            <?php if ($search_results_count > 0): ?>
-                Found <strong><?php echo $search_results_count; ?></strong> internships matching your criteria
-            <?php else: ?>
-                No internships found matching your criteria
-            <?php endif; ?>
-        </p>
+        <h1 class="display-4 fw-bold mb-3">All Internships</h1>
+        <p class="lead text-muted">Browse all available internship opportunities from top companies</p>
     </div>
 </section>
 
-<!-- ================= SEARCH FORM ================= -->
+<!-- ================= SEARCH & FILTER ================= -->
 <section class="py-4 bg-white border-bottom">
     <div class="container">
-        <form method="POST" action="search.php">
+        <form method="POST" action="">
             <div class="row g-3">
-                <div class="col-md-4">
-                    <input type="text" class="form-control" name="search_title" placeholder="Job title, keyword..."
+                <div class="col-md-5">
+                    <input type="text" class="form-control" name="search_title" placeholder="Search internships..."
                            value="<?php echo htmlspecialchars($search_title); ?>">
                 </div>
                 <div class="col-md-4">
-                    <input type="text" class="form-control" name="search_location" placeholder="Location, Remote..."
+                    <input type="text" class="form-control" name="search_location" placeholder="Filter by location..."
                            value="<?php echo htmlspecialchars($search_location); ?>">
                 </div>
-                <div class="col-md-4">
-                    <input type="text" class="form-control" name="search_company" placeholder="Company name..."
-                           value="<?php echo htmlspecialchars($search_company); ?>">
-                </div>
-            </div>
-            <div class="row mt-3">
-                <div class="col-12 d-flex gap-2">
-                    <button type="submit" class="btn btn-primary flex-grow-1">
-                        <i class="bi bi-search"></i> Search Internships
-                    </button>
-                    <a href="internships.php" class="btn btn-secondary">
-                        <i class="bi bi-x"></i> Clear
-                    </a>
+                <div class="col-md-3">
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary flex-grow-1">Search</button>
+                        <a href="internships.php" class="btn btn-secondary">Clear</a>
+                    </div>
                 </div>
             </div>
         </form>
-        <?php if (($search_title || $search_location || $search_company) && $search_results_count > 0): ?>
+        <?php if (!empty($search_title) || !empty($search_location)) { ?>
         <div class="mt-3">
             <small class="text-muted">
                 <strong>Filters Applied:</strong>
-                <?php if (!empty($search_title)) echo '<span class="badge bg-primary me-1">Title: ' . htmlspecialchars($search_title) . '</span>'; ?>
-                <?php if (!empty($search_location)) echo '<span class="badge bg-info me-1">Location: ' . htmlspecialchars($search_location) . '</span>'; ?>
-                <?php if (!empty($search_company)) echo '<span class="badge bg-success me-1">Company: ' . htmlspecialchars($search_company) . '</span>'; ?>
+                <?php if (!empty($search_title)) echo htmlspecialchars($search_title) . " "; ?>
+                <?php if (!empty($search_location)) echo "in " . htmlspecialchars($search_location); ?>
             </small>
         </div>
-        <?php endif; ?>
+        <?php } ?>
     </div>
 </section>
 
-<!-- ================= RESULTS ================= -->
+<!-- ================= INTERNSHIPS GRID ================= -->
 <section class="py-5">
     <div class="container">
-        <?php if($search_results_count > 0): ?>
+        <?php if(mysqli_num_rows($result) > 0) { ?>
         <div class="row g-4">
-            <?php while($row = mysqli_fetch_assoc($result)): ?>
+            <?php while($row = mysqli_fetch_assoc($result)) { ?>
             <div class="col-lg-4 col-md-6">
                 <div class="card shadow h-100 border-0">
                     <div class="card-body">
                         <h4 class="card-title"><?php echo htmlspecialchars($row['title']); ?></h4>
-                        <h6 class="text-primary fw-bold mb-3">
-                            <i class="bi bi-building"></i> <?php echo htmlspecialchars($row['company_name']); ?>
-                        </h6>
+                        <h6 class="text-primary fw-bold mb-3"><?php echo htmlspecialchars($row['company_name']); ?></h6>
 
-                        <div class="mb-2">
+                        <div class="mb-3">
                             <p class="mb-2"><i class="bi bi-geo-alt-fill text-danger"></i> <?php echo htmlspecialchars($row['location_type']); ?></p>
                             <p class="mb-2"><i class="bi bi-cash-coin text-success"></i> <?php echo htmlspecialchars($row['stipend']); ?></p>
-                            <p class="mb-2"><i class="bi bi-calendar-range text-info"></i> <?php echo htmlspecialchars($row['duration']); ?></p>
-                            <?php if ($row['deadline']): ?>
-                            <p class="mb-3"><i class="bi bi-clock text-warning"></i> Deadline: <?php echo date('d M Y', strtotime($row['deadline'])); ?></p>
-                            <?php endif; ?>
+                            <p class="mb-3"><i class="bi bi-calendar-range text-info"></i> <?php echo htmlspecialchars($row['duration']); ?></p>
                         </div>
 
-                        <a href="student/internship-details.php?id=<?php echo $row['internship_id']; ?>" class="btn btn-primary w-100">
-                            <i class="bi bi-eye"></i> View Details
+                        <a href="student/login.php" class="btn btn-primary w-100">
+                            <i class="bi bi-arrow-right"></i> Apply Now
                         </a>
                     </div>
                 </div>
             </div>
-            <?php endwhile; ?>
+            <?php } ?>
         </div>
-        <?php else: ?>
+        <?php } else { ?>
         <div class="alert alert-info text-center py-5">
-            <i class="bi bi-inbox display-4 text-muted mb-3"></i>
-            <h4>No internships found</h4>
-            <p>Try adjusting your search criteria or browse all internships</p>
-            <a href="internships.php" class="btn btn-primary mt-3">Browse Internships</a>
+            <h4>No internships available.</h4>
+            <p>Check back soon for new opportunities!</p>
         </div>
-        <?php endif; ?>
+        <?php } ?>
     </div>
 </section>
 
